@@ -1,100 +1,220 @@
 import React from "react";
-import { Link, NavLink, useNavigate } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
-import { useTheme } from "@/context/ThemeContext";
-import { Coins, LayoutDashboard, Flame, ListChecks, Gift, History, LogOut, Sparkles, Trophy, Zap, Sun, Moon } from "lucide-react";
 
-const navItems = [
-  { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
-  { to: "/habits", label: "Habits", icon: Flame },
-  { to: "/tasks", label: "Tasks", icon: ListChecks },
-  { to: "/quests", label: "Quests", icon: Zap },
-  { to: "/rewards", label: "Rewards", icon: Gift },
-  { to: "/achievements", label: "Trophies", icon: Trophy },
-  { to: "/history", label: "History", icon: History },
+const NAV_ITEMS = [
+  { label: "Dashboard", path: "/", icon: "🌿" },
+  { label: "Habits", path: "/habits", icon: "✅" },
+  { label: "Tasks", path: "/tasks", icon: "📝" },
+  { label: "Rewards", path: "/rewards", icon: "🎁" },
+  { label: "Quests", path: "/quests", icon: "🧭" },
+  { label: "Achievements", path: "/achievements", icon: "🏆" },
+  { label: "History", path: "/history", icon: "📅" },
 ];
 
 export default function Layout({ children }) {
-  const { user, logout } = useAuth();
-  const { theme, toggle } = useTheme();
   const navigate = useNavigate();
+  const { logout } = useAuth();
 
-  const handleLogout = async () => {
-    await logout();
+  function handleLogout() {
+    logout();
     navigate("/login");
-  };
+  }
 
   return (
-    <div className="min-h-screen bg-[#FDFCFB] dark:bg-[#14141A] text-[#1E1E24] dark:text-[#F3F0EA]">
-      <header className="sticky top-0 z-30 bg-[#FDFCFB]/95 dark:bg-[#14141A]/95 backdrop-blur border-b-2 border-[#1E1E24] dark:border-[#FDFCFB]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between gap-3">
-          <Link to="/" className="flex items-center gap-2" data-testid="app-logo-link">
-            <div className="w-10 h-10 rounded-xl bg-[#0EA5E9] border-2 border-[#1E1E24] dark:border-[#FDFCFB] flex items-center justify-center" style={{ boxShadow: "3px 3px 0 0 currentColor" }}>
-              <Sparkles className="w-5 h-5 text-white" strokeWidth={3} />
+    <div style={styles.shell}>
+      <aside style={styles.sidebar}>
+        <div>
+          <div style={styles.brand} onClick={() => navigate("/")}>
+            <div style={styles.logo}>
+              H<span style={styles.leaf}>●</span>
             </div>
-            <span className="font-heading font-black text-2xl tracking-tight">Habio</span>
-          </Link>
 
-          <nav className="hidden lg:flex items-center gap-1">
-            {navItems.map((item) => (
+            <div>
+              <strong style={styles.brandName}>Habio</strong>
+              <p style={styles.brandSub}>Build better days</p>
+            </div>
+          </div>
+
+          <nav style={styles.nav}>
+            {NAV_ITEMS.map((item) => (
               <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.end}
-                data-testid={`nav-${item.label.toLowerCase()}`}
-                className={({ isActive }) =>
-                  `px-3 py-2 rounded-xl font-bold text-sm flex items-center gap-1.5 transition-all ${
-                    isActive
-                      ? "bg-[#1E1E24] text-white dark:bg-[#FDFCFB] dark:text-[#1E1E24]"
-                      : "text-[#1E1E24] dark:text-[#F3F0EA] hover:bg-[#F3F0EA] dark:hover:bg-[#2A2A33]"
-                  }`
-                }
+                key={item.path}
+                to={item.path}
+                end={item.path === "/"}
+                style={({ isActive }) => ({
+                  ...styles.navItem,
+                  ...(isActive ? styles.navItemActive : {}),
+                })}
               >
-                <item.icon className="w-4 h-4" strokeWidth={2.75} />
-                {item.label}
+                <span style={styles.navIcon}>{item.icon}</span>
+                <span>{item.label}</span>
               </NavLink>
             ))}
           </nav>
-
-          <div className="flex items-center gap-2">
-            <div className="nb-badge-coin" data-testid="coin-balance">
-              <Coins className="w-4 h-4" strokeWidth={3} />
-              <span>{user?.coin_balance ?? 0}</span>
-            </div>
-            <button onClick={toggle} className="nb-btn nb-btn-outline !px-3 !py-2" data-testid="theme-toggle-btn" aria-label="Toggle theme">
-              {theme === "dark" ? <Sun className="w-4 h-4" strokeWidth={2.75} /> : <Moon className="w-4 h-4" strokeWidth={2.75} />}
-            </button>
-            <button onClick={handleLogout} className="nb-btn nb-btn-outline !px-3 !py-2" data-testid="logout-btn" aria-label="Logout">
-              <LogOut className="w-4 h-4" strokeWidth={2.75} />
-            </button>
-          </div>
         </div>
 
-        <nav className="lg:hidden border-t-2 border-[#1E1E24] dark:border-[#FDFCFB] bg-white dark:bg-[#1F1F28] overflow-x-auto">
-          <div className="flex items-center gap-1 px-3 py-2 min-w-max">
-            {navItems.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.end}
-                data-testid={`mobile-nav-${item.label.toLowerCase()}`}
-                className={({ isActive }) =>
-                  `px-3 py-2 rounded-lg font-bold text-xs flex items-center gap-1.5 whitespace-nowrap ${
-                    isActive
-                      ? "bg-[#1E1E24] text-white dark:bg-[#FDFCFB] dark:text-[#1E1E24]"
-                      : "text-[#1E1E24] dark:text-[#F3F0EA]"
-                  }`
-                }
-              >
-                <item.icon className="w-4 h-4" strokeWidth={2.75} />
-                {item.label}
-              </NavLink>
-            ))}
+        <div style={styles.footer}>
+          <div style={styles.tipCard}>
+            <div style={styles.tipBadge}>Today</div>
+            <p style={styles.tipText}>Small wins compound. Keep your streak alive.</p>
           </div>
-        </nav>
-      </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10">{children}</main>
+          <button style={styles.onboardingButton} onClick={() => navigate("/onboarding")}>
+            Restart onboarding
+          </button>
+
+          <button style={styles.logoutButton} onClick={handleLogout}>
+            Logout
+          </button>
+        </div>
+      </aside>
+
+      <main style={styles.main}>
+        <div style={styles.content}>{children}</div>
+      </main>
     </div>
   );
 }
+
+const styles = {
+  shell: {
+    minHeight: "100vh",
+    display: "grid",
+    gridTemplateColumns: "280px 1fr",
+    background: "var(--bg)",
+    color: "var(--text)",
+  },
+  sidebar: {
+    minHeight: "100vh",
+    padding: 22,
+    background: "rgba(255, 255, 255, 0.86)",
+    borderRight: "1px solid var(--border)",
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "space-between",
+    position: "sticky",
+    top: 0,
+    boxSizing: "border-box",
+    backdropFilter: "blur(12px)",
+  },
+  brand: {
+    display: "flex",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 30,
+    cursor: "pointer",
+  },
+  logo: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    background: "linear-gradient(135deg, var(--primary), var(--primary-dark))",
+    color: "white",
+    display: "grid",
+    placeItems: "center",
+    fontWeight: 900,
+    fontSize: 25,
+    boxShadow: "var(--shadow)",
+    position: "relative",
+  },
+  leaf: {
+    position: "absolute",
+    right: 10,
+    top: 9,
+    fontSize: 9,
+    color: "var(--accent)",
+  },
+  brandName: {
+    fontSize: 24,
+    letterSpacing: "-0.04em",
+    color: "var(--text)",
+  },
+  brandSub: {
+    margin: "3px 0 0",
+    color: "var(--muted)",
+    fontWeight: 700,
+    fontSize: 13,
+  },
+  nav: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 8,
+  },
+  navItem: {
+    padding: "12px 14px",
+    borderRadius: 999,
+    color: "var(--text)",
+    textDecoration: "none",
+    fontWeight: 800,
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    transition: "background 0.15s ease, transform 0.15s ease",
+  },
+  navItemActive: {
+    background: "#eef6ef",
+    color: "var(--primary-dark)",
+    boxShadow: "inset 0 0 0 1px rgba(79, 143, 91, 0.18)",
+  },
+  navIcon: {
+    width: 24,
+    display: "inline-flex",
+    justifyContent: "center",
+  },
+  footer: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 10,
+  },
+  tipCard: {
+    background: "#fff7df",
+    border: "1px solid rgba(242, 184, 75, 0.55)",
+    borderRadius: 18,
+    padding: 14,
+  },
+  tipBadge: {
+    display: "inline-flex",
+    background: "var(--accent)",
+    color: "var(--text)",
+    borderRadius: 999,
+    padding: "4px 9px",
+    fontSize: 12,
+    fontWeight: 900,
+    marginBottom: 8,
+  },
+  tipText: {
+    margin: 0,
+    color: "var(--primary-dark)",
+    fontWeight: 700,
+    fontSize: 13,
+    lineHeight: 1.35,
+  },
+  onboardingButton: {
+    padding: "12px 14px",
+    border: "1px solid var(--border)",
+    borderRadius: 999,
+    background: "white",
+    color: "var(--primary-dark)",
+    fontWeight: 900,
+    cursor: "pointer",
+  },
+  logoutButton: {
+    padding: "12px 14px",
+    border: "none",
+    borderRadius: 999,
+    background: "var(--primary)",
+    color: "white",
+    fontWeight: 900,
+    cursor: "pointer",
+  },
+  main: {
+    padding: 34,
+    width: "100%",
+    boxSizing: "border-box",
+  },
+  content: {
+    maxWidth: 1180,
+    margin: "0 auto",
+  },
+};

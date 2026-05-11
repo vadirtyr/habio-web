@@ -1,124 +1,336 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState } from "react";
 import { api } from "@/lib/api";
-import { useAuth } from "@/context/AuthContext";
-import { celebrate } from "@/lib/confetti";
-import * as LucideIcons from "lucide-react";
-import { Coins, Sparkles, Lock, CheckCircle2 } from "lucide-react";
+import { useAppState } from "@/context/AppStateContext";
 import { toast } from "sonner";
 
-function ProgressBar({ percent, color }) {
-  return (
-    <div className="w-full h-2.5 rounded-full bg-[#F3F0EA] dark:bg-[#2A2A33] border border-[#1E1E24] dark:border-[#FDFCFB] overflow-hidden">
-      <div className="h-full transition-all" style={{ width: `${percent}%`, background: color }} />
-    </div>
-  );
-}
-
-function getButtonContent(quest, claiming) {
-  if (claiming) return "Claiming...";
-  if (quest.claimed) return <><CheckCircle2 className="w-4 h-4" strokeWidth={3} /> Claimed</>;
-  if (quest.claimable) return <><Sparkles className="w-4 h-4" strokeWidth={3} /> Claim +{quest.reward}</>;
-  return <><Lock className="w-4 h-4" strokeWidth={3} /> Locked</>;
-}
-
-function getButtonClass(quest) {
-  if (quest.claimed) return "nb-btn-outline";
-  if (quest.claimable) return "nb-btn-success";
-  return "nb-btn-outline";
-}
-
-function QuestCard({ quest, onClaim, claiming }) {
-  const Icon = LucideIcons[quest.icon] || Sparkles;
-  const periodLabel = quest.period === "daily" ? "DAILY" : "WEEKLY";
-  const periodCls = quest.period === "daily" ? "bg-[#FFD166] text-[#1E1E24]" : "bg-[#3B82F6] text-white";
-
-  return (
-    <div className="nb-card nb-card-hover p-5" data-testid={`quest-${quest.id}`}>
-      <div className="flex items-start gap-4 mb-4">
-        <div
-          className="w-14 h-14 rounded-2xl border-2 border-[#1E1E24] dark:border-[#FDFCFB] flex items-center justify-center shrink-0"
-          style={{ background: quest.claimable ? "#06D6A0" : "#FFD166", boxShadow: "3px 3px 0 0 #1E1E24" }}
-        >
-          <Icon className="w-7 h-7 text-[#1E1E24]" strokeWidth={2.75} />
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <span className={`nb-badge ${periodCls}`}>{periodLabel}</span>
-            <span className="nb-badge-coin !text-xs"><Coins className="w-3 h-3" strokeWidth={3} />+{quest.reward}</span>
-          </div>
-          <h3 className="font-heading font-extrabold text-lg leading-tight">{quest.name}</h3>
-          <p className="text-sm text-[#5C5C68] dark:text-[#9AA0A6] mt-0.5">{quest.description}</p>
-        </div>
-      </div>
-
-      <div className="mb-3">
-        <ProgressBar percent={quest.percent} color={quest.completed ? "#06D6A0" : "#FFD166"} />
-        <div className="text-xs font-bold text-[#5C5C68] dark:text-[#9AA0A6] mt-1">
-          {quest.progress} / {quest.target}
-        </div>
-      </div>
-
-      <button
-        onClick={() => onClaim(quest.id)}
-        disabled={!quest.claimable || claiming}
-        className={`nb-btn w-full ${getButtonClass(quest)}`}
-        data-testid={`quest-claim-${quest.id}`}
-      >
-        {getButtonContent(quest, claiming)}
-      </button>
-    </div>
-  );
-}
-
 export default function Quests() {
-  const { updateBalance } = useAuth();
+  const { syncAppState } = useAppState();
+
   const [quests, setQuests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [claimingId, setClaimingId] = useState(null);
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  async function loadQuests() {
     try {
       const { data } = await api.get("/quests");
-      setQuests(data.items);
-    } catch (e) {
-      console.error("Failed to load quests", e);
+
+      setQuests(
+        Array.isArray(data) ? data : data.items || data.quests || []
+      );
+    } catch (err) {
+      toast.error(
+        err.response?.data?.detail || err.message || "Failed to load quests"
+      );
     } finally {
       setLoading(false);
     }
+  }
+
+  useEffect(() => {
+    loadQuests();
   }, []);
 
-  useEffect(() => { load(); }, [load]);
-
-  const claim = async (questId) => {
+  async function claimQuest(questId) {
     setClaimingId(questId);
+
     try {
       const { data } = await api.post(`/quests/${questId}/claim`);
-      updateBalance(data.new_balance);
-      celebrate("big");
-      toast.success(`Quest claimed! +${data.coins_earned} coins`);
-      load();
-    } catch (e) {
-      toast.error(e.response?.data?.detail || "Failed");
+
+      await syncAppState();
+      await loadQuests();
+
+      toast.success(
+        `Quest reward claimed! +${data.coins_earned || 0} coins`
+      );
+    } catch (err) {
+      toast.error(
+        err.response?.data?.detail || err.message || "Failed to claim quest"
+      );
     } finally {
       setClaimingId(null);
     }
-  };
+  }
+
+  if (loading) {
+    return (
+      <div style={styles.page}>
+        <h1 style={styles.title}>Quests</h1>
+        <p style={styles.subtitle}>Loading quests...</p>
+      </div>
+    );
+  }
 
   return (
-    <div data-testid="quests-page">
-      <div className="mb-8">
-        <p className="text-sm font-bold uppercase tracking-[0.15em] text-[#5C5C68] dark:text-[#9AA0A6]">Bonus rewards</p>
-        <h1 className="font-heading text-4xl sm:text-5xl font-black tracking-tighter">Daily &amp; weekly quests</h1>
+    <div style={styles.page}>
+      <div style={styles.header}>
+        <div>
+          <h1 style={styles.title}>Quests</h1>
+          <p style={styles.subtitle}>
+            Complete challenges, build momentum, and earn bonus coins.
+          </p>
+        </div>
       </div>
 
-      {loading ? (
-        <div className="text-center py-16 text-[#5C5C68] dark:text-[#9AA0A6] font-bold">Loading...</div>
+      {quests.length === 0 ? (
+        <div style={styles.emptyCard}>
+          <h2>No quests yet</h2>
+          <p style={styles.subtitle}>
+            Quests will appear here as you use Habio.
+          </p>
+        </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {quests.map((q) => <QuestCard key={q.id} quest={q} onClaim={claim} claiming={claimingId === q.id} />)}
+        <div style={styles.grid}>
+          {quests.map((quest) => {
+            const questId = quest.id || quest._id;
+
+            const progress = Number(quest.progress ?? quest.current ?? 0);
+
+            const target = Number(quest.target ?? quest.goal ?? 1);
+
+            const percent = Number(
+              quest.percent ??
+                Math.min(100, Math.round((progress / target) * 100))
+            );
+
+            const completed = Boolean(quest.completed);
+            const claimed = Boolean(quest.claimed);
+            const claimable = Boolean(quest.claimable);
+
+            return (
+              <div
+                key={questId}
+                style={{
+                  ...styles.card,
+                  ...(completed ? styles.completedCard : {}),
+                }}
+              >
+                <div style={styles.cardTop}>
+                  <div>
+                    <h2 style={styles.questName}>
+                      {quest.title || quest.name}
+                    </h2>
+
+                    <p style={styles.meta}>
+                      {quest.type ||
+                        quest.category ||
+                        `${quest.period || "daily"} quest`}
+                    </p>
+                  </div>
+
+                  <div style={styles.coinBadge}>
+                    +{quest.reward_coins ?? quest.coins ?? quest.reward ?? 25}
+                  </div>
+                </div>
+
+                {quest.description && (
+                  <p style={styles.description}>{quest.description}</p>
+                )}
+
+                <div style={styles.progressWrap}>
+                  <div style={styles.progressHeader}>
+                    <strong>
+                      {progress}/{target}
+                    </strong>
+
+                    <span>{percent}%</span>
+                  </div>
+
+                  <div style={styles.progressTrack}>
+                    <div
+                      style={{
+                        ...styles.progressFill,
+                        width: `${percent}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div style={styles.footer}>
+                  <div
+                    style={{
+                      ...styles.statusBadge,
+                      ...(completed ? styles.completedBadge : {}),
+                    }}
+                  >
+                    {claimed
+                      ? "Claimed"
+                      : completed
+                      ? "Completed"
+                      : "In Progress"}
+                  </div>
+
+                  {claimable && !claimed && (
+                    <button
+                      style={styles.claimButton}
+                      disabled={claimingId === questId}
+                      onClick={() => claimQuest(questId)}
+                    >
+                      {claimingId === questId
+                        ? "Claiming..."
+                        : "Claim Reward"}
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
   );
 }
+
+const styles = {
+  page: {
+    width: "100%",
+  },
+
+  header: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 20,
+    marginBottom: 30,
+    flexWrap: "wrap",
+  },
+
+  title: {
+    margin: 0,
+    fontSize: 42,
+    lineHeight: 1,
+    letterSpacing: "-0.05em",
+    color: "var(--text)",
+  },
+
+  subtitle: {
+    margin: "10px 0 0",
+    color: "var(--muted)",
+    fontWeight: 600,
+    fontSize: 16,
+  },
+
+  emptyCard: {
+    padding: 34,
+    background: "var(--surface)",
+    border: "1px solid var(--border)",
+    borderRadius: 28,
+    boxShadow: "var(--shadow)",
+    textAlign: "center",
+  },
+
+  grid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
+    gap: 20,
+  },
+
+  card: {
+    padding: 22,
+    background: "var(--surface)",
+    border: "1px solid var(--border)",
+    borderRadius: 28,
+    boxShadow: "var(--shadow)",
+  },
+
+  completedCard: {
+    background: "linear-gradient(180deg, #f4fff6 0%, #ffffff 100%)",
+  },
+
+  cardTop: {
+    display: "flex",
+    justifyContent: "space-between",
+    gap: 14,
+    alignItems: "flex-start",
+  },
+
+  questName: {
+    margin: 0,
+    fontSize: 23,
+    letterSpacing: "-0.03em",
+    color: "var(--text)",
+  },
+
+  meta: {
+    margin: "7px 0 0",
+    color: "var(--muted)",
+    fontWeight: 700,
+    fontSize: 14,
+  },
+
+  coinBadge: {
+    padding: "7px 11px",
+    borderRadius: 999,
+    background: "#fff7df",
+    color: "var(--primary-dark)",
+    border: "1px solid rgba(242, 184, 75, 0.55)",
+    fontWeight: 900,
+    whiteSpace: "nowrap",
+    fontSize: 13,
+  },
+
+  description: {
+    marginTop: 14,
+    color: "var(--muted)",
+    lineHeight: 1.5,
+    fontSize: 15,
+  },
+
+  progressWrap: {
+    marginTop: 20,
+  },
+
+  progressHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    marginBottom: 9,
+    fontWeight: 800,
+    color: "var(--primary-dark)",
+  },
+
+  progressTrack: {
+    height: 12,
+    borderRadius: 999,
+    background: "#eef2ea",
+    overflow: "hidden",
+  },
+
+  progressFill: {
+    height: "100%",
+    background: "linear-gradient(90deg, var(--primary), var(--accent))",
+    borderRadius: 999,
+  },
+
+  footer: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 12,
+    marginTop: 18,
+    flexWrap: "wrap",
+  },
+
+  statusBadge: {
+    display: "inline-block",
+    padding: "8px 12px",
+    borderRadius: 999,
+    background: "#eef6ef",
+    color: "var(--primary-dark)",
+    fontWeight: 900,
+    fontSize: 13,
+  },
+
+  completedBadge: {
+    background: "#dff3e2",
+  },
+
+  claimButton: {
+    padding: "11px 16px",
+    border: "none",
+    borderRadius: 999,
+    background: "var(--primary)",
+    color: "white",
+    fontWeight: 900,
+    cursor: "pointer",
+    boxShadow: "0 8px 22px rgba(79, 143, 91, 0.24)",
+  },
+};

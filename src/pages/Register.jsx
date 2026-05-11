@@ -1,12 +1,13 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
-import { Sparkles, Mail, Lock, User } from "lucide-react";
+import { Leaf, Mail, Lock, User } from "lucide-react";
 import { toast } from "sonner";
 
 export default function Register() {
   const { register } = useAuth();
   const navigate = useNavigate();
+
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
@@ -14,13 +15,16 @@ export default function Register() {
 
   const onSubmit = async (e) => {
     e.preventDefault();
+
     if (password.length < 6) {
       toast.error("Password must be at least 6 characters");
       return;
     }
+
     setSubmitting(true);
     const res = await register(email, password, name);
     setSubmitting(false);
+
     if (res.ok) {
       toast.success("Account created! Welcome to Habio.");
       navigate("/");
@@ -30,50 +34,80 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen auth-bg flex items-center justify-center px-4 py-10">
-      <div className="w-full max-w-md">
-        <div className="flex items-center justify-center gap-2 mb-6">
-          <div className="w-12 h-12 rounded-2xl bg-[#0EA5E9] border-2 border-[#1E1E24] flex items-center justify-center" style={{ boxShadow: "4px 4px 0 0 #1E1E24" }}>
-            <Sparkles className="w-6 h-6 text-white" strokeWidth={3} />
+    <div style={styles.page}>
+      <div style={styles.shell}>
+        <div style={styles.brand}>
+          <div style={styles.logo}>
+            H
+            <Leaf size={16} strokeWidth={3} style={styles.logoLeaf} />
           </div>
-          <span className="font-heading font-black text-3xl">Habio</span>
+
+          <div>
+            <div style={styles.brandName}>Habio</div>
+            <div style={styles.brandSub}>Build better days</div>
+          </div>
         </div>
 
-        <div className="nb-card p-8">
-          <h1 className="font-heading text-3xl sm:text-4xl font-black mb-2">Start your quest</h1>
-          <p className="text-[#5C5C68] mb-6">Build habits. Earn coins. Unlock rewards.</p>
+        <div style={styles.card}>
+          <div style={styles.badge}>Start fresh</div>
 
-          <form onSubmit={onSubmit} className="space-y-4" data-testid="register-form">
-            <div>
-              <label className="text-xs font-bold uppercase tracking-[0.15em] text-[#5C5C68] mb-1.5 block">Name</label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9AA0A6]" strokeWidth={2.5} />
-                <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" className="nb-input pl-10" data-testid="register-name-input" />
-              </div>
-            </div>
-            <div>
-              <label className="text-xs font-bold uppercase tracking-[0.15em] text-[#5C5C68] mb-1.5 block">Email</label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9AA0A6]" strokeWidth={2.5} />
-                <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" className="nb-input pl-10" data-testid="register-email-input" />
-              </div>
-            </div>
-            <div>
-              <label className="text-xs font-bold uppercase tracking-[0.15em] text-[#5C5C68] mb-1.5 block">Password</label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9AA0A6]" strokeWidth={2.5} />
-                <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 6 chars" className="nb-input pl-10" data-testid="register-password-input" />
-              </div>
-            </div>
+          <h1 style={styles.title}>Create your account</h1>
+          <p style={styles.subtitle}>
+            Build habits, earn coins, and turn small wins into momentum.
+          </p>
 
-            <button type="submit" disabled={submitting} className="nb-btn nb-btn-primary w-full !py-3.5 text-base" data-testid="register-submit-btn">
-              {submitting ? "Creating..." : "Create Account"}
+          <form onSubmit={onSubmit} style={styles.form} data-testid="register-form">
+            <Field label="Name" icon={<User size={18} strokeWidth={2.5} />}>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Your name"
+                style={styles.input}
+                data-testid="register-name-input"
+              />
+            </Field>
+
+            <Field label="Email" icon={<Mail size={18} strokeWidth={2.5} />}>
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                style={styles.input}
+                data-testid="register-email-input"
+              />
+            </Field>
+
+            <Field label="Password" icon={<Lock size={18} strokeWidth={2.5} />}>
+              <input
+                type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="At least 6 characters"
+                style={styles.input}
+                data-testid="register-password-input"
+              />
+            </Field>
+
+            <button
+              type="submit"
+              disabled={submitting}
+              style={{
+                ...styles.submitButton,
+                ...(submitting ? styles.submitButtonDisabled : {}),
+              }}
+              data-testid="register-submit-btn"
+            >
+              {submitting ? "Creating..." : "Create account"}
             </button>
           </form>
 
-          <p className="text-sm text-center mt-5 text-[#5C5C68]">
+          <p style={styles.loginText}>
             Already have an account?{" "}
-            <Link to="/login" className="font-bold text-[#0EA5E9] underline underline-offset-2" data-testid="go-to-login-link">
+            <Link to="/login" style={styles.loginLink} data-testid="go-to-login-link">
               Log in
             </Link>
           </p>
@@ -82,3 +116,192 @@ export default function Register() {
     </div>
   );
 }
+
+function Field({ label, icon, children }) {
+  return (
+    <label style={styles.field}>
+      <span style={styles.label}>{label}</span>
+      <div style={styles.inputWrap}>
+        <span style={styles.inputIcon}>{icon}</span>
+        {children}
+      </div>
+    </label>
+  );
+}
+
+const styles = {
+  page: {
+    minHeight: "100vh",
+    background:
+      "radial-gradient(circle at top left, rgba(242, 184, 75, 0.22), transparent 34%), var(--bg)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 24,
+    boxSizing: "border-box",
+  },
+
+  shell: {
+    width: "100%",
+    maxWidth: 440,
+  },
+
+  brand: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 12,
+    marginBottom: 24,
+  },
+
+  logo: {
+    width: 54,
+    height: 54,
+    borderRadius: 18,
+    background: "linear-gradient(135deg, var(--primary), var(--primary-dark))",
+    color: "white",
+    display: "grid",
+    placeItems: "center",
+    fontWeight: 900,
+    fontSize: 28,
+    boxShadow: "var(--shadow)",
+    position: "relative",
+  },
+
+  logoLeaf: {
+    position: "absolute",
+    right: 8,
+    top: 8,
+    color: "var(--accent)",
+  },
+
+  brandName: {
+    color: "var(--text)",
+    fontWeight: 900,
+    fontSize: 30,
+    lineHeight: 1,
+    letterSpacing: "-0.05em",
+  },
+
+  brandSub: {
+    marginTop: 4,
+    color: "var(--muted)",
+    fontWeight: 700,
+    fontSize: 13,
+  },
+
+  card: {
+    background: "rgba(255, 255, 255, 0.92)",
+    border: "1px solid var(--border)",
+    borderRadius: 32,
+    boxShadow: "var(--shadow)",
+    padding: 34,
+    backdropFilter: "blur(12px)",
+  },
+
+  badge: {
+    display: "inline-flex",
+    borderRadius: 999,
+    background: "#fff7df",
+    color: "var(--primary-dark)",
+    border: "1px solid rgba(242, 184, 75, 0.5)",
+    padding: "7px 11px",
+    fontWeight: 900,
+    fontSize: 13,
+    marginBottom: 16,
+  },
+
+  title: {
+    margin: 0,
+    color: "var(--text)",
+    fontSize: 36,
+    lineHeight: 1,
+    letterSpacing: "-0.06em",
+  },
+
+  subtitle: {
+    margin: "12px 0 26px",
+    color: "var(--muted)",
+    fontWeight: 600,
+    lineHeight: 1.5,
+  },
+
+  form: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 16,
+  },
+
+  field: {
+    display: "block",
+  },
+
+  label: {
+    display: "block",
+    marginBottom: 7,
+    color: "var(--muted)",
+    fontSize: 12,
+    fontWeight: 900,
+    textTransform: "uppercase",
+    letterSpacing: "0.12em",
+  },
+
+  inputWrap: {
+    position: "relative",
+  },
+
+  inputIcon: {
+    position: "absolute",
+    left: 14,
+    top: "50%",
+    transform: "translateY(-50%)",
+    color: "var(--muted)",
+    display: "flex",
+    pointerEvents: "none",
+  },
+
+  input: {
+    width: "100%",
+    boxSizing: "border-box",
+    border: "1px solid var(--border)",
+    borderRadius: 18,
+    padding: "14px 14px 14px 44px",
+    color: "var(--text)",
+    background: "white",
+    outline: "none",
+    fontWeight: 700,
+  },
+
+  submitButton: {
+    marginTop: 4,
+    width: "100%",
+    border: "none",
+    borderRadius: 999,
+    padding: "14px 18px",
+    background: "var(--primary)",
+    color: "white",
+    fontWeight: 900,
+    cursor: "pointer",
+    boxShadow: "0 8px 22px rgba(79, 143, 91, 0.24)",
+  },
+
+  submitButtonDisabled: {
+    opacity: 0.65,
+    cursor: "not-allowed",
+  },
+
+  loginText: {
+    margin: "22px 0 0",
+    textAlign: "center",
+    color: "var(--muted)",
+    fontWeight: 600,
+    fontSize: 14,
+  },
+
+  loginLink: {
+    color: "var(--primary-dark)",
+    fontWeight: 900,
+    textDecoration: "underline",
+    textUnderlineOffset: 3,
+  },
+};
