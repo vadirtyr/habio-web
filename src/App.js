@@ -1,10 +1,12 @@
+// src/App.js
+
 import React from "react";
 import "./theme.css";
 import "@/App.css";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "sonner";
 
-import { AuthProvider, useAuth } from "@/context/AuthContext";
+import { AuthProvider } from "@/context/AuthContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { AppStateProvider } from "@/context/AppStateContext";
 
@@ -27,6 +29,7 @@ import History from "@/pages/History";
 import Achievements from "@/pages/Achievements";
 import Quests from "@/pages/Quests";
 import Onboarding from "@/pages/Onboarding";
+import PrivacyPolicy from "@/pages/PrivacyPolicy";
 
 const TOAST_OPTIONS = {
   style: {
@@ -78,6 +81,8 @@ function App() {
                     </AuthGate>
                   }
                 />
+
+                <Route path="/privacy" element={<PrivacyPolicy />} />
 
                 <Route
                   path="/"

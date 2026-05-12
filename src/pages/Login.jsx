@@ -89,16 +89,22 @@ export default function Login() {
             </button>
           </form>
 
-          <p style={styles.registerText}>
-            Don&apos;t have an account?{" "}
-            <Link
-              to="/register"
-              style={styles.registerLink}
-              data-testid="go-to-register-link"
-            >
-              Sign up
+          <div style={styles.footerLinks}>
+            <p style={styles.registerText}>
+              Don&apos;t have an account?{" "}
+              <Link
+                to="/register"
+                style={styles.registerLink}
+                data-testid="go-to-register-link"
+              >
+                Sign up
+              </Link>
+            </p>
+
+            <Link to="/privacy" style={styles.privacyLink}>
+              Privacy Policy
             </Link>
-          </p>
+          </div>
         </div>
       </div>
     </div>
@@ -278,8 +284,16 @@ const styles = {
     cursor: "not-allowed",
   },
 
+  footerLinks: {
+    marginTop: 22,
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: 10,
+  },
+
   registerText: {
-    margin: "22px 0 0",
+    margin: 0,
     textAlign: "center",
     color: "var(--muted)",
     fontWeight: 600,
@@ -289,6 +303,14 @@ const styles = {
   registerLink: {
     color: "var(--primary-dark)",
     fontWeight: 900,
+    textDecoration: "underline",
+    textUnderlineOffset: 3,
+  },
+
+  privacyLink: {
+    color: "var(--muted)",
+    fontWeight: 700,
+    fontSize: 13,
     textDecoration: "underline",
     textUnderlineOffset: 3,
   },
