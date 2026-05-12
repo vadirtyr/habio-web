@@ -30,6 +30,7 @@ import Achievements from "@/pages/Achievements";
 import Quests from "@/pages/Quests";
 import Onboarding from "@/pages/Onboarding";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
+import DeleteAccount from "@/pages/DeleteAccount";
 
 const TOAST_OPTIONS = {
   style: {
@@ -83,6 +84,7 @@ function App() {
                 />
 
                 <Route path="/privacy" element={<PrivacyPolicy />} />
+                <Route path="/delete-account" element={<DeleteAccount />} />
 
                 <Route
                   path="/"
