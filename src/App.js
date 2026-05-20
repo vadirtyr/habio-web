@@ -31,6 +31,8 @@ import Quests from "@/pages/Quests";
 import Onboarding from "@/pages/Onboarding";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import DeleteAccount from "@/pages/DeleteAccount";
+import Settings from "@/pages/Settings";
+import ChangePassword from "@/pages/ChangePassword";
 
 const TOAST_OPTIONS = {
   style: {
@@ -203,15 +205,31 @@ function App() {
                   }
                 />
 
+               <Route
+                 path="/history"
+                 element={
+                  <Shell>
+                    <History />
+                 </Shell>
+                 }
+              />
+
                 <Route
-                  path="/history"
+                  path="/settings"
                   element={
                     <Shell>
-                      <History />
+                      <Settings />
                     </Shell>
                   }
-                />
-
+              />
+                <Route
+                  path="/change-password"
+                  element={
+                    <Shell>
+                      <ChangePassword />
+                    </Shell>
+                  }
+              />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </BrowserRouter>

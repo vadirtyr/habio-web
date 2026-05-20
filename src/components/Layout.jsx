@@ -10,6 +10,7 @@ const NAV_ITEMS = [
   { label: "Quests", path: "/quests", icon: "🧭" },
   { label: "Achievements", path: "/achievements", icon: "🏆" },
   { label: "History", path: "/history", icon: "📅" },
+  { label: "Settings", path: "/settings", icon: "⚙️" },
 ];
 
 export default function Layout({ children }) {
@@ -57,10 +58,15 @@ export default function Layout({ children }) {
         <div style={styles.footer}>
           <div style={styles.tipCard}>
             <div style={styles.tipBadge}>Today</div>
-            <p style={styles.tipText}>Small wins compound. Keep your streak alive.</p>
+            <p style={styles.tipText}>
+              Small wins compound. Keep your streak alive.
+            </p>
           </div>
 
-          <button style={styles.onboardingButton} onClick={() => navigate("/onboarding")}>
+          <button
+            style={styles.onboardingButton}
+            onClick={() => navigate("/onboarding")}
+          >
             Restart onboarding
           </button>
 
@@ -81,7 +87,7 @@ const styles = {
   shell: {
     minHeight: "100vh",
     display: "grid",
-    gridTemplateColumns: "280px 1fr",
+    gridTemplateColumns: "280px minmax(0, 1fr)",
     background: "var(--bg)",
     color: "var(--text)",
   },
@@ -97,6 +103,7 @@ const styles = {
     top: 0,
     boxSizing: "border-box",
     backdropFilter: "blur(12px)",
+    overflowY: "auto",
   },
   brand: {
     display: "flex",
@@ -166,6 +173,7 @@ const styles = {
     display: "flex",
     flexDirection: "column",
     gap: 10,
+    marginTop: 24,
   },
   tipCard: {
     background: "#fff7df",
@@ -209,11 +217,13 @@ const styles = {
     cursor: "pointer",
   },
   main: {
-    padding: 34,
+    padding: "34px clamp(16px, 4vw, 34px)",
     width: "100%",
     boxSizing: "border-box",
+    overflowX: "hidden",
   },
   content: {
+    width: "100%",
     maxWidth: 1180,
     margin: "0 auto",
   },
