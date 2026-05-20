@@ -99,6 +99,9 @@ export default function Login() {
               >
                 Sign up
               </Link>
+              <Link to="/forgot-password" style={styles.privacyLink}>
+                Forgot password?
+              </Link>
             </p>
 
             <Link to="/privacy" style={styles.privacyLink}>

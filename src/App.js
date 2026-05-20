@@ -33,6 +33,8 @@ import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import DeleteAccount from "@/pages/DeleteAccount";
 import Settings from "@/pages/Settings";
 import ChangePassword from "@/pages/ChangePassword";
+import ForgotPassword from "@/pages/ForgotPassword";
+import ResetPassword from "@/pages/ResetPassword";
 
 const TOAST_OPTIONS = {
   style: {
@@ -87,6 +89,8 @@ function App() {
 
                 <Route path="/privacy" element={<PrivacyPolicy />} />
                 <Route path="/delete-account" element={<DeleteAccount />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
 
                 <Route
                   path="/"
