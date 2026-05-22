@@ -75,7 +75,7 @@ export default function Quests() {
         <div style={styles.emptyCard}>
           <h2>No quests yet</h2>
           <p style={styles.subtitle}>
-            Quests will appear here as you use Habio.
+            Quests will appear here as you use OurOrbit.
           </p>
         </div>
       ) : (

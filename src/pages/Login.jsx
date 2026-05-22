@@ -37,7 +37,7 @@ export default function Login() {
           </div>
 
           <div>
-            <div style={styles.brandName}>Habio</div>
+            <div style={styles.brandName}>OurOrbit</div>
             <div style={styles.brandSub}>Build better days</div>
           </div>
         </div>
@@ -45,7 +45,7 @@ export default function Login() {
         <div style={styles.card}>
           <div style={styles.badge}>Welcome back</div>
 
-          <h1 style={styles.title}>Log in to Habio</h1>
+          <h1 style={styles.title}>Log in to OurOrbit</h1>
           <p style={styles.subtitle}>
             Keep your streaks alive, finish your tasks, and earn your next
             reward.
