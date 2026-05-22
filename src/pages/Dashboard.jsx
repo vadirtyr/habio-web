@@ -215,7 +215,7 @@ export default function Dashboard() {
             .map((task) => (
               <MiniItem
                 key={task.id || task._id}
-                title={task.title}
+                title={task.name || task.title}
                 detail={task.priority || "medium"}
                 badge={task.due_date || "Open"}
               />
