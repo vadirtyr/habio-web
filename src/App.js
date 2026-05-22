@@ -3,7 +3,14 @@
 import React from "react";
 import "./theme.css";
 import "@/App.css";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+
 import { Toaster } from "sonner";
 
 import { AuthProvider } from "@/context/AuthContext";
@@ -15,26 +22,36 @@ import Layout from "@/components/Layout";
 
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
+
 import Dashboard from "@/pages/Dashboard";
+
 import Habits from "@/pages/Habits";
 import CreateHabit from "@/pages/CreateHabit";
 import EditHabit from "@/pages/EditHabit";
+
 import Tasks from "@/pages/Tasks";
 import CreateTask from "@/pages/CreateTask";
 import EditTask from "@/pages/EditTask";
+
 import Rewards from "@/pages/Rewards";
 import CreateReward from "@/pages/CreateReward";
 import EditReward from "@/pages/EditReward";
+
 import History from "@/pages/History";
 import Achievements from "@/pages/Achievements";
 import Quests from "@/pages/Quests";
+
 import Onboarding from "@/pages/Onboarding";
+
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import DeleteAccount from "@/pages/DeleteAccount";
+
 import Settings from "@/pages/Settings";
 import ChangePassword from "@/pages/ChangePassword";
+
 import ForgotPassword from "@/pages/ForgotPassword";
 import ResetPassword from "@/pages/ResetPassword";
+
 import ThemeStore from "@/pages/ThemeStore";
 
 const TOAST_OPTIONS = {
@@ -63,11 +80,14 @@ function Shell({ children }) {
 function App() {
   return (
     <div className="App">
-      <ThemeProvider>
-        <AuthProvider>
+      <AuthProvider>
+        <ThemeProvider>
           <AppStateProvider>
             <BrowserRouter>
-              <Toaster position="top-right" toastOptions={TOAST_OPTIONS} />
+              <Toaster
+                position="top-right"
+                toastOptions={TOAST_OPTIONS}
+              />
 
               <Routes>
                 <Route
@@ -88,10 +108,25 @@ function App() {
                   }
                 />
 
-                <Route path="/privacy" element={<PrivacyPolicy />} />
-                <Route path="/delete-account" element={<DeleteAccount />} />
-                <Route path="/forgot-password" element={<ForgotPassword />} />
-                <Route path="/reset-password" element={<ResetPassword />} />
+                <Route
+                  path="/privacy"
+                  element={<PrivacyPolicy />}
+                />
+
+                <Route
+                  path="/delete-account"
+                  element={<DeleteAccount />}
+                />
+
+                <Route
+                  path="/forgot-password"
+                  element={<ForgotPassword />}
+                />
+
+                <Route
+                  path="/reset-password"
+                  element={<ResetPassword />}
+                />
 
                 <Route
                   path="/"
@@ -200,16 +235,16 @@ function App() {
                     </Shell>
                   }
                 />
+
                 <Route
                   path="/themes"
                   element={
-                  <ProtectedRoute>
-                <Layout>
-                  <ThemeStore />
-                </Layout>
-                </ProtectedRoute>
-               }
-              />
+                    <Shell>
+                      <ThemeStore />
+                    </Shell>
+                  }
+                />
+
                 <Route
                   path="/achievements"
                   element={
@@ -219,14 +254,14 @@ function App() {
                   }
                 />
 
-               <Route
-                 path="/history"
-                 element={
-                  <Shell>
-                    <History />
-                 </Shell>
-                 }
-              />
+                <Route
+                  path="/history"
+                  element={
+                    <Shell>
+                      <History />
+                    </Shell>
+                  }
+                />
 
                 <Route
                   path="/settings"
@@ -235,7 +270,8 @@ function App() {
                       <Settings />
                     </Shell>
                   }
-              />
+                />
+
                 <Route
                   path="/change-password"
                   element={
@@ -243,13 +279,17 @@ function App() {
                       <ChangePassword />
                     </Shell>
                   }
-              />
-                <Route path="*" element={<Navigate to="/" replace />} />
+                />
+
+                <Route
+                  path="*"
+                  element={<Navigate to="/" replace />}
+                />
               </Routes>
             </BrowserRouter>
           </AppStateProvider>
-        </AuthProvider>
-      </ThemeProvider>
+        </ThemeProvider>
+      </AuthProvider>
     </div>
   );
 }
