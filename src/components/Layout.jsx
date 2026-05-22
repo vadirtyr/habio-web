@@ -79,15 +79,11 @@ export default function Layout({ children }) {
             }}
             onClick={() => navigate("/")}
           >
-            <div
-              style={{
-                ...styles.logo,
-                width: isMobile ? 48 : 54,
-                height: isMobile ? 48 : 54,
-              }}
-            >
-              <Rocket size={isMobile ? 20 : 22} />
-            </div>
+           <img
+              src="/icon.png"
+              alt="OurOrbit"
+              style={styles.logoImage}
+            />
 
             <div>
               <strong
@@ -322,8 +318,15 @@ const styles = {
     justifyContent: "center",
     gap: 8,
     boxShadow: "0 10px 24px rgba(79, 143, 91, 0.22)",
-  },
-
+    },
+    logoImage: {
+    width: 54,
+    height: 54,
+    borderRadius: 20,
+    objectFit: "cover",
+    boxShadow: "0 10px 26px rgba(0,0,0,0.16)",
+    flex: "0 0 auto",
+    },
   main: {
     width: "100%",
     boxSizing: "border-box",
