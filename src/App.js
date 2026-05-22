@@ -35,6 +35,7 @@ import Settings from "@/pages/Settings";
 import ChangePassword from "@/pages/ChangePassword";
 import ForgotPassword from "@/pages/ForgotPassword";
 import ResetPassword from "@/pages/ResetPassword";
+import ThemeStore from "@/pages/ThemeStore";
 
 const TOAST_OPTIONS = {
   style: {
@@ -199,7 +200,16 @@ function App() {
                     </Shell>
                   }
                 />
-
+                <Route
+                  path="/themes"
+                  element={
+                  <ProtectedRoute>
+                <Layout>
+                  <ThemeStore />
+                </Layout>
+                </ProtectedRoute>
+               }
+              />
                 <Route
                   path="/achievements"
                   element={

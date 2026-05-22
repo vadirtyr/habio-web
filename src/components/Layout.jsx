@@ -9,6 +9,7 @@ const NAV_ITEMS = [
   { label: "Rewards", path: "/rewards", icon: "🎁" },
   { label: "Quests", path: "/quests", icon: "🧭" },
   { label: "Achievements", path: "/achievements", icon: "🏆" },
+  { label: "Themes", path: "/themes", icon: "🎨" },
   { label: "History", path: "/history", icon: "📅" },
   { label: "Settings", path: "/settings", icon: "⚙️" },
 ];
