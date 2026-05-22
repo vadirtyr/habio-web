@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   Compass,
@@ -25,29 +25,93 @@ export default function Layout({ children }) {
   const navigate = useNavigate();
   const { logout } = useAuth();
 
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== "undefined"
+      ? window.innerWidth < 980
+      : false
+  );
+
+  useEffect(() => {
+    function handleResize() {
+      setIsMobile(window.innerWidth < 980);
+    }
+
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []);
+
   function handleLogout() {
     logout();
     navigate("/login");
   }
 
   return (
-    <div style={styles.shell}>
-      <aside style={styles.sidebar}>
+    <div
+      style={{
+        ...styles.shell,
+        gridTemplateColumns: isMobile
+          ? "1fr"
+          : "300px minmax(0, 1fr)",
+      }}
+    >
+      <aside
+        style={{
+          ...styles.sidebar,
+          position: isMobile ? "relative" : "sticky",
+          minHeight: isMobile ? "auto" : "100vh",
+          borderRight: isMobile
+            ? "none"
+            : "1px solid var(--border)",
+          borderBottom: isMobile
+            ? "1px solid var(--border)"
+            : "none",
+          padding: isMobile ? 16 : 22,
+        }}
+      >
         <div>
-          <div style={styles.brand} onClick={() => navigate("/")}>
-            <div style={styles.logo}>
-              <Rocket size={22} />
+          <div
+            style={{
+              ...styles.brand,
+              marginBottom: isMobile ? 20 : 32,
+            }}
+            onClick={() => navigate("/")}
+          >
+            <div
+              style={{
+                ...styles.logo,
+                width: isMobile ? 48 : 54,
+                height: isMobile ? 48 : 54,
+              }}
+            >
+              <Rocket size={isMobile ? 20 : 22} />
             </div>
 
             <div>
-              <strong style={styles.brandName}>OurOrbit</strong>
+              <strong
+                style={{
+                  ...styles.brandName,
+                  fontSize: isMobile ? 24 : 28,
+                }}
+              >
+                OurOrbit
+              </strong>
+
               <p style={styles.brandSub}>
                 Small actions. Long-term momentum.
               </p>
             </div>
           </div>
 
-          <nav style={styles.nav}>
+          <nav
+            style={{
+              ...styles.nav,
+              flexDirection: isMobile ? "row" : "column",
+              flexWrap: isMobile ? "wrap" : "nowrap",
+            }}
+          >
             {NAV_ITEMS.map((item) => (
               <NavLink
                 key={item.path}
@@ -56,6 +120,10 @@ export default function Layout({ children }) {
                 style={({ isActive }) => ({
                   ...styles.navItem,
                   ...(isActive ? styles.navItemActive : {}),
+                  flex: isMobile ? "1 1 auto" : undefined,
+                  justifyContent: isMobile
+                    ? "center"
+                    : "flex-start",
                 })}
               >
                 <span style={styles.navIcon}>{item.icon}</span>
@@ -92,7 +160,14 @@ export default function Layout({ children }) {
         </div>
       </aside>
 
-      <main style={styles.main}>
+      <main
+        style={{
+          ...styles.main,
+          padding: isMobile
+            ? "20px 14px"
+            : "34px clamp(16px, 4vw, 34px)",
+        }}
+      >
         <div style={styles.content}>{children}</div>
       </main>
     </div>
@@ -103,37 +178,29 @@ const styles = {
   shell: {
     minHeight: "100vh",
     display: "grid",
-    gridTemplateColumns: "300px minmax(0, 1fr)",
     background: "var(--bg)",
     color: "var(--text)",
   },
 
   sidebar: {
-    minHeight: "100vh",
-    padding: 22,
     background: "rgba(255,255,255,0.52)",
-    borderRight: "1px solid var(--border)",
     display: "flex",
     flexDirection: "column",
     justifyContent: "space-between",
-    position: "sticky",
     top: 0,
     boxSizing: "border-box",
     backdropFilter: "blur(16px)",
-    overflowY: "auto",
+    overflow: "hidden",
   },
 
   brand: {
     display: "flex",
     alignItems: "center",
     gap: 14,
-    marginBottom: 32,
     cursor: "pointer",
   },
 
   logo: {
-    width: 54,
-    height: 54,
     borderRadius: 20,
     background:
       "linear-gradient(135deg, var(--primary), var(--primary-dark))",
@@ -146,7 +213,6 @@ const styles = {
 
   brandName: {
     display: "block",
-    fontSize: 28,
     letterSpacing: "-0.05em",
     color: "var(--text)",
     lineHeight: 1,
@@ -162,7 +228,6 @@ const styles = {
 
   nav: {
     display: "flex",
-    flexDirection: "column",
     gap: 8,
   },
 
@@ -176,12 +241,14 @@ const styles = {
     alignItems: "center",
     gap: 12,
     transition: "all 0.15s ease",
+    minWidth: 0,
   },
 
   navItemActive: {
     background: "rgba(79, 143, 91, 0.12)",
     color: "var(--primary-dark)",
-    boxShadow: "inset 0 0 0 1px rgba(79, 143, 91, 0.18)",
+    boxShadow:
+      "inset 0 0 0 1px rgba(79, 143, 91, 0.18)",
   },
 
   navIcon: {
@@ -189,13 +256,14 @@ const styles = {
     display: "inline-flex",
     justifyContent: "center",
     fontSize: 16,
+    flex: "0 0 auto",
   },
 
   footer: {
     display: "flex",
     flexDirection: "column",
     gap: 12,
-    marginTop: 28,
+    marginTop: 24,
   },
 
   tipCard: {
@@ -257,7 +325,6 @@ const styles = {
   },
 
   main: {
-    padding: "34px clamp(16px, 4vw, 34px)",
     width: "100%",
     boxSizing: "border-box",
     overflowX: "hidden",

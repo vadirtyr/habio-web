@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { Leaf, Trash2 } from "lucide-react";
+import { Rocket, Trash2 } from "lucide-react";
 
 export default function DeleteAccount() {
   return (
@@ -8,12 +8,11 @@ export default function DeleteAccount() {
       <div style={styles.card}>
         <div style={styles.brand}>
           <div style={styles.logo}>
-            H
-            <Leaf size={16} strokeWidth={3} style={styles.logoLeaf} />
+            <Rocket size={24} />
           </div>
 
           <div>
-            <div style={styles.brandName}>Habio</div>
+            <div style={styles.brandName}>OurOrbit</div>
             <div style={styles.brandSub}>Account deletion</div>
           </div>
         </div>
@@ -22,18 +21,18 @@ export default function DeleteAccount() {
           <Trash2 size={34} strokeWidth={2.5} />
         </div>
 
-        <h1 style={styles.title}>Delete your Habio account</h1>
+        <h1 style={styles.title}>Delete your OurOrbit account</h1>
 
         <p style={styles.text}>
-          You can permanently delete your Habio account and associated data from
-          inside the Habio app.
+          You can permanently delete your OurOrbit account and associated data
+          from inside the app.
         </p>
 
         <div style={styles.section}>
           <h2 style={styles.sectionTitle}>How to delete your account</h2>
 
           <ol style={styles.list}>
-            <li>Log into your Habio account.</li>
+            <li>Log into your OurOrbit account.</li>
             <li>Open Settings.</li>
             <li>Select Delete Account.</li>
             <li>Confirm that you want to permanently delete your account.</li>
@@ -44,8 +43,8 @@ export default function DeleteAccount() {
           <h2 style={styles.sectionTitle}>What gets deleted</h2>
 
           <p style={styles.text}>
-            Deleting your account removes your Habio account and associated
-            habit, task, reward, progress, achievement, quest, redemption, and
+            Deleting your account removes your account and associated habit,
+            task, reward, progress, achievement, quest, redemption, and
             transaction data.
           </p>
         </div>
@@ -57,8 +56,8 @@ export default function DeleteAccount() {
 
         <p style={styles.text}>
           If you cannot access your account, contact support at{" "}
-          <a href="mailto:support@habioapp.co" style={styles.link}>
-            support@habioapp.co
+          <a href="mailto:support@ourorbit.net" style={styles.link}>
+            support@ourorbit.net
           </a>
           .
         </p>
@@ -80,8 +79,7 @@ export default function DeleteAccount() {
 const styles = {
   page: {
     minHeight: "100vh",
-    background:
-      "radial-gradient(circle at top left, rgba(242, 184, 75, 0.22), transparent 34%), var(--bg)",
+    background: "var(--bg)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -92,53 +90,42 @@ const styles = {
   card: {
     width: "100%",
     maxWidth: 720,
-    background: "rgba(255, 255, 255, 0.94)",
+    background: "var(--surface)",
     border: "1px solid var(--border)",
-    borderRadius: 32,
+    borderRadius: 34,
     boxShadow: "var(--shadow)",
     padding: 36,
-    backdropFilter: "blur(12px)",
     boxSizing: "border-box",
   },
 
   brand: {
     display: "flex",
     alignItems: "center",
-    gap: 12,
+    gap: 14,
     marginBottom: 28,
   },
 
   logo: {
-    width: 54,
-    height: 54,
-    borderRadius: 18,
+    width: 58,
+    height: 58,
+    borderRadius: 22,
     background: "linear-gradient(135deg, var(--primary), var(--primary-dark))",
     color: "white",
     display: "grid",
     placeItems: "center",
-    fontWeight: 900,
-    fontSize: 28,
-    boxShadow: "var(--shadow)",
-    position: "relative",
-  },
-
-  logoLeaf: {
-    position: "absolute",
-    right: 8,
-    top: 8,
-    color: "var(--accent)",
+    boxShadow: "0 12px 28px rgba(0,0,0,0.16)",
   },
 
   brandName: {
     color: "var(--text)",
     fontWeight: 900,
-    fontSize: 30,
+    fontSize: 34,
     lineHeight: 1,
-    letterSpacing: "-0.05em",
+    letterSpacing: "-0.06em",
   },
 
   brandSub: {
-    marginTop: 4,
+    marginTop: 5,
     color: "var(--muted)",
     fontWeight: 700,
     fontSize: 13,
@@ -150,23 +137,23 @@ const styles = {
     borderRadius: 22,
     display: "grid",
     placeItems: "center",
-    background: "#fff1f1",
-    color: "#b42318",
-    border: "1px solid #ffd0d0",
+    background: "rgba(217, 83, 79, 0.12)",
+    color: "var(--danger)",
+    border: "1px solid rgba(217, 83, 79, 0.28)",
     marginBottom: 18,
   },
 
   title: {
     margin: 0,
     color: "var(--text)",
-    fontSize: 38,
+    fontSize: 42,
     lineHeight: 1.05,
     letterSpacing: "-0.06em",
   },
 
   text: {
     color: "var(--muted)",
-    fontWeight: 600,
+    fontWeight: 700,
     lineHeight: 1.65,
     fontSize: 16,
   },
@@ -194,8 +181,8 @@ const styles = {
     marginTop: 26,
     padding: 16,
     borderRadius: 18,
-    background: "#fff7df",
-    border: "1px solid rgba(242, 184, 75, 0.55)",
+    background: "rgba(242, 184, 75, 0.16)",
+    border: "1px solid rgba(242, 184, 75, 0.45)",
     color: "var(--text)",
     fontWeight: 700,
     lineHeight: 1.5,
