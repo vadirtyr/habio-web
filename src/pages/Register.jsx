@@ -1,8 +1,15 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "@/context/AuthContext";
-import { Leaf, Mail, Lock, User } from "lucide-react";
+import {
+  Lock,
+  Mail,
+  Rocket,
+  Sparkles,
+  User,
+} from "lucide-react";
 import { toast } from "sonner";
+
+import { useAuth } from "@/context/AuthContext";
 
 export default function Register() {
   const { register } = useAuth();
@@ -13,7 +20,7 @@ export default function Register() {
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const onSubmit = async (e) => {
+  async function onSubmit(e) {
     e.preventDefault();
 
     if (password.length < 6) {
@@ -22,41 +29,55 @@ export default function Register() {
     }
 
     setSubmitting(true);
+
     const res = await register(email, password, name);
+
     setSubmitting(false);
 
     if (res.ok) {
-      toast.success("Account created! Welcome to Habio.");
-      navigate("/");
+      toast.success("Welcome to OurOrbit");
+      navigate("/onboarding");
     } else {
       toast.error(res.error);
     }
-  };
+  }
 
   return (
     <div style={styles.page}>
+      <div style={styles.backgroundGlow} />
+
       <div style={styles.shell}>
         <div style={styles.brand}>
           <div style={styles.logo}>
-            H
-            <Leaf size={16} strokeWidth={3} style={styles.logoLeaf} />
+            <Rocket size={24} />
           </div>
 
           <div>
-            <div style={styles.brandName}>Habio</div>
-            <div style={styles.brandSub}>Build better days</div>
+            <div style={styles.brandName}>OurOrbit</div>
+            <div style={styles.brandSub}>
+              Small actions. Long-term momentum.
+            </div>
           </div>
         </div>
 
         <div style={styles.card}>
-          <div style={styles.badge}>Start fresh</div>
+          <div style={styles.badge}>
+            <Sparkles size={14} />
+            Start fresh
+          </div>
 
           <h1 style={styles.title}>Create your account</h1>
+
           <p style={styles.subtitle}>
-            Build habits, earn coins, and turn small wins into momentum.
+            Build habits, complete goals, unlock themes, and create momentum one
+            day at a time.
           </p>
 
-          <form onSubmit={onSubmit} style={styles.form} data-testid="register-form">
+          <form
+            onSubmit={onSubmit}
+            style={styles.form}
+            data-testid="register-form"
+          >
             <Field label="Name" icon={<User size={18} strokeWidth={2.5} />}>
               <input
                 type="text"
@@ -101,16 +122,30 @@ export default function Register() {
               }}
               data-testid="register-submit-btn"
             >
-              {submitting ? "Creating..." : "Create account"}
+              {submitting ? "Creating account..." : "Create account"}
             </button>
           </form>
 
-          <p style={styles.loginText}>
-            Already have an account?{" "}
-            <Link to="/login" style={styles.loginLink} data-testid="go-to-login-link">
-              Log in
-            </Link>
-          </p>
+          <div style={styles.footer}>
+            <p style={styles.loginText}>
+              Already have an account?{" "}
+              <Link
+                to="/login"
+                style={styles.loginLink}
+                data-testid="go-to-login-link"
+              >
+                Log in
+              </Link>
+            </p>
+
+            <p style={styles.legal}>
+              By creating an account, you agree to the{" "}
+              <Link to="/privacy" style={styles.legalLink}>
+                Privacy Policy
+              </Link>
+              .
+            </p>
+          </div>
         </div>
       </div>
     </div>
@@ -121,6 +156,7 @@ function Field({ label, icon, children }) {
   return (
     <label style={styles.field}>
       <span style={styles.label}>{label}</span>
+
       <div style={styles.inputWrap}>
         <span style={styles.inputIcon}>{icon}</span>
         {children}
@@ -132,98 +168,105 @@ function Field({ label, icon, children }) {
 const styles = {
   page: {
     minHeight: "100vh",
-    background:
-      "radial-gradient(circle at top left, rgba(242, 184, 75, 0.22), transparent 34%), var(--bg)",
+    background: "var(--bg)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     padding: 24,
     boxSizing: "border-box",
+    position: "relative",
+    overflow: "hidden",
+  },
+
+  backgroundGlow: {
+    position: "absolute",
+    inset: 0,
+    background:
+      "radial-gradient(circle at top left, rgba(242, 184, 75, 0.20), transparent 30%), radial-gradient(circle at bottom right, rgba(79, 143, 91, 0.12), transparent 32%)",
+    pointerEvents: "none",
   },
 
   shell: {
     width: "100%",
-    maxWidth: 440,
+    maxWidth: 460,
+    position: "relative",
+    zIndex: 1,
   },
 
   brand: {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    gap: 12,
-    marginBottom: 24,
+    gap: 14,
+    marginBottom: 26,
   },
 
   logo: {
-    width: 54,
-    height: 54,
-    borderRadius: 18,
-    background: "linear-gradient(135deg, var(--primary), var(--primary-dark))",
+    width: 58,
+    height: 58,
+    borderRadius: 22,
+    background:
+      "linear-gradient(135deg, var(--primary), var(--primary-dark))",
     color: "white",
     display: "grid",
     placeItems: "center",
-    fontWeight: 900,
-    fontSize: 28,
-    boxShadow: "var(--shadow)",
-    position: "relative",
-  },
-
-  logoLeaf: {
-    position: "absolute",
-    right: 8,
-    top: 8,
-    color: "var(--accent)",
+    boxShadow: "0 12px 28px rgba(0,0,0,0.16)",
+    flex: "0 0 auto",
   },
 
   brandName: {
     color: "var(--text)",
     fontWeight: 900,
-    fontSize: 30,
+    fontSize: 34,
     lineHeight: 1,
-    letterSpacing: "-0.05em",
+    letterSpacing: "-0.06em",
   },
 
   brandSub: {
-    marginTop: 4,
+    marginTop: 5,
     color: "var(--muted)",
     fontWeight: 700,
     fontSize: 13,
+    lineHeight: 1.4,
   },
 
   card: {
-    background: "rgba(255, 255, 255, 0.92)",
+    background: "rgba(255,255,255,0.72)",
     border: "1px solid var(--border)",
-    borderRadius: 32,
+    borderRadius: 34,
     boxShadow: "var(--shadow)",
     padding: 34,
-    backdropFilter: "blur(12px)",
+    backdropFilter: "blur(16px)",
   },
 
   badge: {
     display: "inline-flex",
+    alignItems: "center",
+    gap: 6,
     borderRadius: 999,
     background: "#fff7df",
     color: "var(--primary-dark)",
     border: "1px solid rgba(242, 184, 75, 0.5)",
-    padding: "7px 11px",
+    padding: "7px 12px",
     fontWeight: 900,
     fontSize: 13,
-    marginBottom: 16,
+    marginBottom: 18,
   },
 
   title: {
     margin: 0,
     color: "var(--text)",
-    fontSize: 36,
+    fontSize: 42,
     lineHeight: 1,
     letterSpacing: "-0.06em",
   },
 
   subtitle: {
-    margin: "12px 0 26px",
+    margin: "14px 0 28px",
     color: "var(--muted)",
-    fontWeight: 600,
-    lineHeight: 1.5,
+    fontWeight: 700,
+    lineHeight: 1.6,
+    fontSize: 15,
   },
 
   form: {
@@ -238,7 +281,7 @@ const styles = {
 
   label: {
     display: "block",
-    marginBottom: 7,
+    marginBottom: 8,
     color: "var(--muted)",
     fontSize: 12,
     fontWeight: 900,
@@ -252,7 +295,7 @@ const styles = {
 
   inputIcon: {
     position: "absolute",
-    left: 14,
+    left: 15,
     top: "50%",
     transform: "translateY(-50%)",
     color: "var(--muted)",
@@ -264,25 +307,27 @@ const styles = {
     width: "100%",
     boxSizing: "border-box",
     border: "1px solid var(--border)",
-    borderRadius: 18,
-    padding: "14px 14px 14px 44px",
+    borderRadius: 20,
+    padding: "15px 15px 15px 46px",
     color: "var(--text)",
-    background: "white",
+    background: "rgba(255,255,255,0.92)",
     outline: "none",
     fontWeight: 700,
+    fontSize: 15,
   },
 
   submitButton: {
-    marginTop: 4,
+    marginTop: 6,
     width: "100%",
     border: "none",
     borderRadius: 999,
-    padding: "14px 18px",
+    padding: "15px 18px",
     background: "var(--primary)",
     color: "white",
     fontWeight: 900,
     cursor: "pointer",
-    boxShadow: "0 8px 22px rgba(79, 143, 91, 0.24)",
+    fontSize: 15,
+    boxShadow: "0 10px 24px rgba(79, 143, 91, 0.24)",
   },
 
   submitButtonDisabled: {
@@ -290,17 +335,40 @@ const styles = {
     cursor: "not-allowed",
   },
 
+  footer: {
+    marginTop: 24,
+    display: "flex",
+    flexDirection: "column",
+    gap: 10,
+    alignItems: "center",
+  },
+
   loginText: {
-    margin: "22px 0 0",
+    margin: 0,
     textAlign: "center",
     color: "var(--muted)",
-    fontWeight: 600,
+    fontWeight: 700,
     fontSize: 14,
   },
 
   loginLink: {
     color: "var(--primary-dark)",
     fontWeight: 900,
+    textDecoration: "underline",
+    textUnderlineOffset: 3,
+  },
+
+  legal: {
+    margin: 0,
+    color: "var(--muted)",
+    fontSize: 12,
+    textAlign: "center",
+    lineHeight: 1.5,
+  },
+
+  legalLink: {
+    color: "var(--primary-dark)",
+    fontWeight: 800,
     textDecoration: "underline",
     textUnderlineOffset: 3,
   },

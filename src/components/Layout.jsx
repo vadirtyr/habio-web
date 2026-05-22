@@ -1,9 +1,16 @@
 import React from "react";
 import { NavLink, useNavigate } from "react-router-dom";
+import {
+  Compass,
+  LogOut,
+  Rocket,
+  Sparkles,
+} from "lucide-react";
+
 import { useAuth } from "@/context/AuthContext";
 
 const NAV_ITEMS = [
-  { label: "Dashboard", path: "/", icon: "🌿" },
+  { label: "Dashboard", path: "/", icon: "🌍" },
   { label: "Habits", path: "/habits", icon: "✅" },
   { label: "Tasks", path: "/tasks", icon: "📝" },
   { label: "Rewards", path: "/rewards", icon: "🎁" },
@@ -29,12 +36,14 @@ export default function Layout({ children }) {
         <div>
           <div style={styles.brand} onClick={() => navigate("/")}>
             <div style={styles.logo}>
-              H<span style={styles.leaf}>●</span>
+              <Rocket size={22} />
             </div>
 
             <div>
-              <strong style={styles.brandName}>Habio</strong>
-              <p style={styles.brandSub}>Build better days</p>
+              <strong style={styles.brandName}>OurOrbit</strong>
+              <p style={styles.brandSub}>
+                Small actions. Long-term momentum.
+              </p>
             </div>
           </div>
 
@@ -58,20 +67,26 @@ export default function Layout({ children }) {
 
         <div style={styles.footer}>
           <div style={styles.tipCard}>
-            <div style={styles.tipBadge}>Today</div>
+            <div style={styles.tipHeader}>
+              <Sparkles size={15} />
+              Today
+            </div>
+
             <p style={styles.tipText}>
-              Small wins compound. Keep your streak alive.
+              Progress compounds faster than motivation. Keep your orbit moving.
             </p>
           </div>
 
           <button
-            style={styles.onboardingButton}
+            style={styles.secondaryButton}
             onClick={() => navigate("/onboarding")}
           >
+            <Compass size={16} />
             Restart onboarding
           </button>
 
           <button style={styles.logoutButton} onClick={handleLogout}>
+            <LogOut size={16} />
             Logout
           </button>
         </div>
@@ -88,14 +103,15 @@ const styles = {
   shell: {
     minHeight: "100vh",
     display: "grid",
-    gridTemplateColumns: "280px minmax(0, 1fr)",
+    gridTemplateColumns: "300px minmax(0, 1fr)",
     background: "var(--bg)",
     color: "var(--text)",
   },
+
   sidebar: {
     minHeight: "100vh",
     padding: 22,
-    background: "rgba(255, 255, 255, 0.86)",
+    background: "rgba(255,255,255,0.52)",
     borderRight: "1px solid var(--border)",
     display: "flex",
     flexDirection: "column",
@@ -103,111 +119,128 @@ const styles = {
     position: "sticky",
     top: 0,
     boxSizing: "border-box",
-    backdropFilter: "blur(12px)",
+    backdropFilter: "blur(16px)",
     overflowY: "auto",
   },
+
   brand: {
     display: "flex",
     alignItems: "center",
-    gap: 12,
-    marginBottom: 30,
+    gap: 14,
+    marginBottom: 32,
     cursor: "pointer",
   },
+
   logo: {
-    width: 48,
-    height: 48,
-    borderRadius: 16,
-    background: "linear-gradient(135deg, var(--primary), var(--primary-dark))",
+    width: 54,
+    height: 54,
+    borderRadius: 20,
+    background:
+      "linear-gradient(135deg, var(--primary), var(--primary-dark))",
     color: "white",
     display: "grid",
     placeItems: "center",
-    fontWeight: 900,
-    fontSize: 25,
-    boxShadow: "var(--shadow)",
-    position: "relative",
+    boxShadow: "0 10px 26px rgba(0,0,0,0.16)",
+    flex: "0 0 auto",
   },
-  leaf: {
-    position: "absolute",
-    right: 10,
-    top: 9,
-    fontSize: 9,
-    color: "var(--accent)",
-  },
+
   brandName: {
-    fontSize: 24,
-    letterSpacing: "-0.04em",
+    display: "block",
+    fontSize: 28,
+    letterSpacing: "-0.05em",
     color: "var(--text)",
+    lineHeight: 1,
   },
+
   brandSub: {
-    margin: "3px 0 0",
+    margin: "6px 0 0",
     color: "var(--muted)",
     fontWeight: 700,
     fontSize: 13,
+    lineHeight: 1.4,
   },
+
   nav: {
     display: "flex",
     flexDirection: "column",
     gap: 8,
   },
+
   navItem: {
-    padding: "12px 14px",
-    borderRadius: 999,
+    padding: "13px 16px",
+    borderRadius: 20,
     color: "var(--text)",
     textDecoration: "none",
     fontWeight: 800,
     display: "flex",
     alignItems: "center",
-    gap: 10,
-    transition: "background 0.15s ease, transform 0.15s ease",
+    gap: 12,
+    transition: "all 0.15s ease",
   },
+
   navItemActive: {
-    background: "#eef6ef",
+    background: "rgba(79, 143, 91, 0.12)",
     color: "var(--primary-dark)",
     boxShadow: "inset 0 0 0 1px rgba(79, 143, 91, 0.18)",
   },
+
   navIcon: {
     width: 24,
     display: "inline-flex",
     justifyContent: "center",
+    fontSize: 16,
   },
+
   footer: {
     display: "flex",
     flexDirection: "column",
-    gap: 10,
-    marginTop: 24,
+    gap: 12,
+    marginTop: 28,
   },
+
   tipCard: {
-    background: "#fff7df",
-    border: "1px solid rgba(242, 184, 75, 0.55)",
-    borderRadius: 18,
-    padding: 14,
+    background: "rgba(255,255,255,0.55)",
+    border: "1px solid var(--border)",
+    borderRadius: 22,
+    padding: 16,
+    boxShadow: "var(--shadow)",
   },
-  tipBadge: {
+
+  tipHeader: {
     display: "inline-flex",
-    background: "var(--accent)",
-    color: "var(--text)",
+    alignItems: "center",
+    gap: 6,
+    padding: "5px 10px",
     borderRadius: 999,
-    padding: "4px 9px",
-    fontSize: 12,
+    background: "rgba(79, 143, 91, 0.12)",
+    color: "var(--primary-dark)",
     fontWeight: 900,
-    marginBottom: 8,
+    fontSize: 12,
+    marginBottom: 10,
   },
+
   tipText: {
     margin: 0,
-    color: "var(--primary-dark)",
+    color: "var(--muted)",
     fontWeight: 700,
     fontSize: 13,
-    lineHeight: 1.35,
+    lineHeight: 1.5,
   },
-  onboardingButton: {
+
+  secondaryButton: {
     padding: "12px 14px",
     border: "1px solid var(--border)",
     borderRadius: 999,
-    background: "white",
-    color: "var(--primary-dark)",
+    background: "var(--surface)",
+    color: "var(--text)",
     fontWeight: 900,
     cursor: "pointer",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
   },
+
   logoutButton: {
     padding: "12px 14px",
     border: "none",
@@ -216,16 +249,23 @@ const styles = {
     color: "white",
     fontWeight: 900,
     cursor: "pointer",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    boxShadow: "0 10px 24px rgba(79, 143, 91, 0.22)",
   },
+
   main: {
     padding: "34px clamp(16px, 4vw, 34px)",
     width: "100%",
     boxSizing: "border-box",
     overflowX: "hidden",
   },
+
   content: {
     width: "100%",
-    maxWidth: 1180,
+    maxWidth: 1240,
     margin: "0 auto",
   },
 };

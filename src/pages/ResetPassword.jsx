@@ -1,6 +1,12 @@
 import React, { useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, KeyRound, Leaf, Lock } from "lucide-react";
+import {
+  ArrowLeft,
+  KeyRound,
+  Lock,
+  Rocket,
+  ShieldCheck,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import api, { formatApiError } from "@/lib/api";
@@ -9,7 +15,10 @@ export default function ResetPassword() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  const token = useMemo(() => searchParams.get("token") || "", [searchParams]);
+  const token = useMemo(
+    () => searchParams.get("token") || "",
+    [searchParams]
+  );
 
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -41,7 +50,7 @@ export default function ResetPassword() {
         new_password: newPassword,
       });
 
-      toast.success("Password reset successfully. Please log in.");
+      toast.success("Password reset successfully.");
       navigate("/login");
     } catch (err) {
       toast.error(formatApiError(err?.response?.data?.detail));
@@ -52,6 +61,8 @@ export default function ResetPassword() {
 
   return (
     <div style={styles.page}>
+      <div style={styles.backgroundGlow} />
+
       <div style={styles.shell}>
         <Brand />
 
@@ -61,36 +72,43 @@ export default function ResetPassword() {
             Back to login
           </Link>
 
-          <span style={styles.badge}>
-            <KeyRound size={15} />
+          <div style={styles.badge}>
+            <ShieldCheck size={14} />
             Secure reset
-          </span>
+          </div>
 
           <h1 style={styles.title}>Create a new password</h1>
 
           <p style={styles.subtitle}>
-            Choose a new password for your account. Your reset link expires
-            after 1 hour.
+            Choose a new password for your account. Reset links expire after 1
+            hour for security.
           </p>
 
           {!token ? (
             <div style={styles.errorBox}>
+              <div style={styles.errorIcon}>
+                <KeyRound size={20} />
+              </div>
+
               <h2 style={styles.errorTitle}>Invalid reset link</h2>
+
               <p style={styles.errorText}>
-                This link is missing a reset token. Request a new password reset
-                email and try again.
+                This reset link is missing or invalid. Request a new password
+                reset email and try again.
               </p>
 
               <Link to="/forgot-password" style={styles.primaryLink}>
-                Request new link
+                Request a new reset link
               </Link>
             </div>
           ) : (
             <form onSubmit={onSubmit} style={styles.form}>
               <label style={styles.field}>
                 <span style={styles.label}>New password</span>
+
                 <div style={styles.inputWrap}>
                   <Lock size={18} style={styles.inputIcon} />
+
                   <input
                     type="password"
                     value={newPassword}
@@ -104,8 +122,10 @@ export default function ResetPassword() {
 
               <label style={styles.field}>
                 <span style={styles.label}>Confirm password</span>
+
                 <div style={styles.inputWrap}>
                   <Lock size={18} style={styles.inputIcon} />
+
                   <input
                     type="password"
                     value={confirmPassword}
@@ -125,7 +145,7 @@ export default function ResetPassword() {
                   ...(submitting ? styles.submitButtonDisabled : {}),
                 }}
               >
-                {submitting ? "Resetting..." : "Reset password"}
+                {submitting ? "Resetting password..." : "Reset password"}
               </button>
             </form>
           )}
@@ -139,12 +159,15 @@ function Brand() {
   return (
     <div style={styles.brand}>
       <div style={styles.logo}>
-        H
-        <Leaf size={16} style={styles.logoLeaf} />
+        <Rocket size={24} />
       </div>
+
       <div>
-        <div style={styles.brandName}>Habio</div>
-        <div style={styles.brandSub}>Build better days</div>
+        <div style={styles.brandName}>OurOrbit</div>
+
+        <div style={styles.brandSub}>
+          Small actions. Long-term momentum.
+        </div>
       </div>
     </div>
   );
@@ -153,65 +176,77 @@ function Brand() {
 const styles = {
   page: {
     minHeight: "100vh",
-    background:
-      "radial-gradient(circle at top left, rgba(242, 184, 75, 0.22), transparent 34%), var(--bg)",
+    background: "var(--bg)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     padding: 24,
     boxSizing: "border-box",
+    position: "relative",
+    overflow: "hidden",
   },
+
+  backgroundGlow: {
+    position: "absolute",
+    inset: 0,
+    background:
+      "radial-gradient(circle at top left, rgba(242, 184, 75, 0.20), transparent 30%), radial-gradient(circle at bottom right, rgba(79, 143, 91, 0.12), transparent 32%)",
+    pointerEvents: "none",
+  },
+
   shell: {
     width: "100%",
-    maxWidth: 440,
+    maxWidth: 460,
+    position: "relative",
+    zIndex: 1,
   },
+
   brand: {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    gap: 12,
-    marginBottom: 24,
+    gap: 14,
+    marginBottom: 26,
   },
+
   logo: {
-    width: 54,
-    height: 54,
-    borderRadius: 18,
-    background: "linear-gradient(135deg, var(--primary), var(--primary-dark))",
+    width: 58,
+    height: 58,
+    borderRadius: 22,
+    background:
+      "linear-gradient(135deg, var(--primary), var(--primary-dark))",
     color: "white",
     display: "grid",
     placeItems: "center",
-    fontWeight: 900,
-    fontSize: 28,
-    boxShadow: "var(--shadow)",
-    position: "relative",
+    boxShadow: "0 12px 28px rgba(0,0,0,0.16)",
+    flex: "0 0 auto",
   },
-  logoLeaf: {
-    position: "absolute",
-    right: 8,
-    top: 8,
-    color: "var(--accent)",
-  },
+
   brandName: {
     color: "var(--text)",
     fontWeight: 900,
-    fontSize: 30,
+    fontSize: 34,
     lineHeight: 1,
-    letterSpacing: "-0.05em",
+    letterSpacing: "-0.06em",
   },
+
   brandSub: {
-    marginTop: 4,
+    marginTop: 5,
     color: "var(--muted)",
     fontWeight: 700,
     fontSize: 13,
+    lineHeight: 1.4,
   },
+
   card: {
-    background: "rgba(255, 255, 255, 0.92)",
+    background: "rgba(255,255,255,0.72)",
     border: "1px solid var(--border)",
-    borderRadius: 32,
+    borderRadius: 34,
     boxShadow: "var(--shadow)",
     padding: 34,
-    backdropFilter: "blur(12px)",
+    backdropFilter: "blur(16px)",
   },
+
   backLink: {
     display: "inline-flex",
     alignItems: "center",
@@ -222,6 +257,7 @@ const styles = {
     fontSize: 14,
     textDecoration: "none",
   },
+
   badge: {
     display: "inline-flex",
     alignItems: "center",
@@ -230,97 +266,128 @@ const styles = {
     background: "#fff7df",
     color: "var(--primary-dark)",
     border: "1px solid rgba(242, 184, 75, 0.5)",
-    padding: "7px 11px",
+    padding: "7px 12px",
     fontWeight: 900,
     fontSize: 13,
-    marginBottom: 16,
+    marginBottom: 18,
   },
+
   title: {
     margin: 0,
     color: "var(--text)",
-    fontSize: 36,
+    fontSize: 42,
     lineHeight: 1,
     letterSpacing: "-0.06em",
   },
+
   subtitle: {
-    margin: "12px 0 26px",
+    margin: "14px 0 28px",
     color: "var(--muted)",
-    fontWeight: 600,
-    lineHeight: 1.5,
+    fontWeight: 700,
+    lineHeight: 1.6,
+    fontSize: 15,
   },
+
   form: {
     display: "flex",
     flexDirection: "column",
     gap: 16,
   },
+
   field: {
     display: "block",
   },
+
   label: {
     display: "block",
-    marginBottom: 7,
+    marginBottom: 8,
     color: "var(--muted)",
     fontSize: 12,
     fontWeight: 900,
     textTransform: "uppercase",
     letterSpacing: "0.12em",
   },
+
   inputWrap: {
     position: "relative",
   },
+
   inputIcon: {
     position: "absolute",
-    left: 14,
+    left: 15,
     top: "50%",
     transform: "translateY(-50%)",
     color: "var(--muted)",
     pointerEvents: "none",
   },
+
   input: {
     width: "100%",
     boxSizing: "border-box",
     border: "1px solid var(--border)",
-    borderRadius: 18,
-    padding: "14px 14px 14px 44px",
+    borderRadius: 20,
+    padding: "15px 15px 15px 46px",
     color: "var(--text)",
-    background: "white",
+    background: "rgba(255,255,255,0.92)",
     outline: "none",
     fontWeight: 700,
+    fontSize: 15,
   },
+
   submitButton: {
-    marginTop: 4,
+    marginTop: 6,
     width: "100%",
     border: "none",
     borderRadius: 999,
-    padding: "14px 18px",
+    padding: "15px 18px",
     background: "var(--primary)",
     color: "white",
     fontWeight: 900,
     cursor: "pointer",
-    boxShadow: "0 8px 22px rgba(79, 143, 91, 0.24)",
+    fontSize: 15,
+    boxShadow: "0 10px 24px rgba(79, 143, 91, 0.24)",
   },
+
   submitButtonDisabled: {
     opacity: 0.65,
     cursor: "not-allowed",
   },
+
   errorBox: {
-    padding: 18,
-    borderRadius: 22,
-    background: "#fff1f1",
-    border: "1px solid #ffd0d0",
+    padding: 24,
+    borderRadius: 24,
+    background: "rgba(217, 83, 79, 0.08)",
+    border: "1px solid rgba(217, 83, 79, 0.22)",
+    textAlign: "center",
   },
+
+  errorIcon: {
+    width: 54,
+    height: 54,
+    margin: "0 auto 14px",
+    borderRadius: 18,
+    background: "rgba(217, 83, 79, 0.12)",
+    color: "var(--danger)",
+    display: "grid",
+    placeItems: "center",
+  },
+
   errorTitle: {
     margin: 0,
-    color: "#b42318",
-    fontSize: 21,
+    color: "var(--danger)",
+    fontSize: 24,
     fontWeight: 900,
+    letterSpacing: "-0.04em",
   },
+
   errorText: {
-    margin: "8px 0 16px",
+    margin: "10px 0 18px",
     color: "var(--muted)",
     fontWeight: 700,
-    lineHeight: 1.45,
+    lineHeight: 1.6,
+    fontSize: 14,
   },
+
   primaryLink: {
     color: "var(--primary-dark)",
     fontWeight: 900,

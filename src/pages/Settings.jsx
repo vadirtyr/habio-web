@@ -33,13 +33,11 @@ export default function Settings() {
   return (
     <div style={styles.page}>
       <header style={styles.header}>
-        <div>
-          <p style={styles.eyebrow}>Account</p>
-          <h1 style={styles.title}>Settings</h1>
-          <p style={styles.subtitle}>
-            Manage your account, privacy, onboarding, and app preferences.
-          </p>
-        </div>
+        <p style={styles.eyebrow}>OurOrbit</p>
+        <h1 style={styles.title}>Settings</h1>
+        <p style={styles.subtitle}>
+          Manage your account, privacy, onboarding, themes, and session.
+        </p>
       </header>
 
       <section style={styles.profileCard}>
@@ -76,7 +74,7 @@ export default function Settings() {
         <SettingsCard
           icon={<RefreshCcw size={22} />}
           title="Restart Onboarding"
-          description="Go through the setup flow again and add suggested habits."
+          description="Run the setup flow again and add suggested habits."
           to="/onboarding"
         />
 
@@ -90,8 +88,8 @@ export default function Settings() {
         <SettingsCard
           icon={<LifeBuoy size={22} />}
           title="Support"
-          description="Need help? Contact support at support@ourorbit.app."
-          href="mailto:support@ourorbit.app"
+          description="Need help? Contact support at support@ourorbit.net."
+          href="mailto:support@ourorbit.net"
         />
 
         <SettingsCard
@@ -120,27 +118,10 @@ export default function Settings() {
   );
 }
 
-function SettingsCard({
-  icon,
-  title,
-  description,
-  to,
-  href,
-  danger = false,
-}) {
+function SettingsCard({ icon, title, description, to, href, danger = false }) {
   const content = (
-    <div
-      style={{
-        ...styles.card,
-        ...(danger ? styles.dangerCard : {}),
-      }}
-    >
-      <div
-        style={{
-          ...styles.cardIcon,
-          ...(danger ? styles.dangerIcon : {}),
-        }}
-      >
+    <div style={{ ...styles.card, ...(danger ? styles.dangerCard : {}) }}>
+      <div style={{ ...styles.cardIcon, ...(danger ? styles.dangerIcon : {}) }}>
         {icon}
       </div>
 
@@ -175,10 +156,7 @@ const styles = {
     gap: 22,
   },
   header: {
-    display: "flex",
-    justifyContent: "space-between",
-    gap: 20,
-    alignItems: "flex-start",
+    maxWidth: 720,
   },
   eyebrow: {
     margin: "0 0 8px",
@@ -191,7 +169,7 @@ const styles = {
   title: {
     margin: 0,
     color: "var(--text)",
-    fontSize: 44,
+    fontSize: 48,
     lineHeight: 1,
     letterSpacing: "-0.06em",
   },
@@ -201,7 +179,6 @@ const styles = {
     fontWeight: 700,
     fontSize: 16,
     lineHeight: 1.5,
-    maxWidth: 620,
   },
   profileCard: {
     display: "flex",
@@ -209,9 +186,10 @@ const styles = {
     gap: 16,
     padding: 22,
     borderRadius: 28,
-    background: "rgba(255, 255, 255, 0.9)",
+    background: "var(--surface)",
     border: "1px solid var(--border)",
     boxShadow: "var(--shadow)",
+    flexWrap: "wrap",
   },
   avatar: {
     width: 62,
@@ -225,7 +203,7 @@ const styles = {
   },
   profileMain: {
     flex: 1,
-    minWidth: 0,
+    minWidth: 220,
   },
   profileName: {
     margin: 0,
@@ -238,17 +216,17 @@ const styles = {
     margin: "5px 0 0",
     color: "var(--muted)",
     fontWeight: 700,
+    overflowWrap: "anywhere",
   },
   stats: {
     display: "flex",
     gap: 10,
     flexWrap: "wrap",
-    justifyContent: "flex-end",
   },
   statPill: {
     padding: "9px 12px",
     borderRadius: 999,
-    background: "#eef6ef",
+    background: "rgba(79, 143, 91, 0.12)",
     color: "var(--primary-dark)",
     fontWeight: 900,
     border: "1px solid rgba(79, 143, 91, 0.18)",
@@ -270,15 +248,13 @@ const styles = {
     gap: 14,
     padding: 20,
     borderRadius: 26,
-    background: "rgba(255, 255, 255, 0.9)",
+    background: "var(--surface)",
     border: "1px solid var(--border)",
     boxShadow: "var(--shadow)",
     boxSizing: "border-box",
-    transition: "transform 0.15s ease, box-shadow 0.15s ease",
   },
   dangerCard: {
-    background: "#fffafa",
-    borderColor: "#ffd0d0",
+    borderColor: "rgba(217, 83, 79, 0.35)",
   },
   cardIcon: {
     width: 46,
@@ -286,13 +262,13 @@ const styles = {
     borderRadius: 16,
     display: "grid",
     placeItems: "center",
-    background: "#eef6ef",
+    background: "rgba(79, 143, 91, 0.12)",
     color: "var(--primary-dark)",
     flex: "0 0 auto",
   },
   dangerIcon: {
-    background: "#fff1f1",
-    color: "#b42318",
+    background: "rgba(217, 83, 79, 0.12)",
+    color: "var(--danger)",
   },
   cardBody: {
     flex: 1,
@@ -323,8 +299,10 @@ const styles = {
     gap: 18,
     padding: 22,
     borderRadius: 28,
-    background: "#fff7df",
-    border: "1px solid rgba(242, 184, 75, 0.55)",
+    background: "var(--surface)",
+    border: "1px solid var(--border)",
+    boxShadow: "var(--shadow)",
+    flexWrap: "wrap",
   },
   footerTitle: {
     margin: 0,
@@ -334,7 +312,7 @@ const styles = {
   },
   footerText: {
     margin: "6px 0 0",
-    color: "var(--primary-dark)",
+    color: "var(--muted)",
     fontWeight: 700,
     lineHeight: 1.45,
   },

@@ -4,104 +4,83 @@ import React from "react";
 
 export default function PrivacyPolicy() {
   return (
-    <div className="min-h-screen bg-white text-gray-800">
-      <div className="max-w-4xl mx-auto px-6 py-16">
-        <h1 className="text-4xl font-bold mb-4">Privacy Policy</h1>
+    <div style={styles.page}>
+      <div style={styles.container}>
+        <div style={styles.hero}>
+          <div style={styles.badge}>Privacy & Data</div>
 
-        <p className="text-sm text-gray-500 mb-10">
-          Effective Date: May 11, 2026
-        </p>
+          <h1 style={styles.title}>Privacy Policy</h1>
 
-        <div className="space-y-10 leading-7">
-          <section>
+          <p style={styles.subtitle}>
+            Effective Date: May 22, 2026
+          </p>
+        </div>
+
+        <div style={styles.content}>
+          <section style={styles.section}>
             <p>
-              Welcome to <strong>Habio</strong>. Your privacy matters to us.
+              Welcome to <strong>OurOrbit</strong>. Your privacy matters to us.
               This Privacy Policy explains what information we collect, how we
               use it, and the choices you have regarding your data when using
-              the Habio website, mobile app, and related services.
+              the OurOrbit website, mobile app, and related services.
             </p>
           </section>
 
-          <section>
-            <h2 className="text-2xl font-semibold mb-4">
-              1. Information We Collect
-            </h2>
+          <Section title="1. Information We Collect">
+            <SubSection title="Account Information">
+              <p>When you create an account, we may collect:</p>
 
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-lg font-semibold mb-2">
-                  Account Information
-                </h3>
-                <p>
-                  When you create an account, we may collect:
-                </p>
-                <ul className="list-disc pl-6 mt-2 space-y-1">
-                  <li>Name or username</li>
-                  <li>Email address</li>
-                  <li>
-                    Passwords stored securely using encrypted and hashed methods
-                  </li>
-                </ul>
-              </div>
+              <ul style={styles.list}>
+                <li>Name or username</li>
+                <li>Email address</li>
+                <li>
+                  Passwords stored securely using encrypted and hashed methods
+                </li>
+              </ul>
+            </SubSection>
 
-              <div>
-                <h3 className="text-lg font-semibold mb-2">
-                  Habit & Productivity Data
-                </h3>
-                <p>
-                  We collect information you voluntarily enter into the app,
-                  including:
-                </p>
-                <ul className="list-disc pl-6 mt-2 space-y-1">
-                  <li>Habits</li>
-                  <li>Tasks</li>
-                  <li>Goals</li>
-                  <li>Rewards</li>
-                  <li>Progress tracking</li>
-                  <li>Streaks and achievements</li>
-                </ul>
-              </div>
+            <SubSection title="Habit & Productivity Data">
+              <p>
+                We collect information you voluntarily enter into the app,
+                including:
+              </p>
 
-              <div>
-                <h3 className="text-lg font-semibold mb-2">
-                  Device & Usage Information
-                </h3>
-                <p>
-                  We may automatically collect:
-                </p>
-                <ul className="list-disc pl-6 mt-2 space-y-1">
-                  <li>Device type</li>
-                  <li>Browser type</li>
-                  <li>IP address</li>
-                  <li>App version</li>
-                  <li>Crash reports</li>
-                  <li>Usage analytics</li>
-                </ul>
-              </div>
+              <ul style={styles.list}>
+                <li>Habits</li>
+                <li>Tasks</li>
+                <li>Goals</li>
+                <li>Rewards</li>
+                <li>Progress tracking</li>
+                <li>Streaks and achievements</li>
+              </ul>
+            </SubSection>
 
-              <div>
-                <h3 className="text-lg font-semibold mb-2">
-                  Authentication Tokens
-                </h3>
-                <p>
-                  We use secure authentication tokens to keep you signed in and
-                  protect your account.
-                </p>
-              </div>
-            </div>
-          </section>
+            <SubSection title="Device & Usage Information">
+              <p>We may automatically collect:</p>
 
-          <section>
-            <h2 className="text-2xl font-semibold mb-4">
-              2. How We Use Your Information
-            </h2>
+              <ul style={styles.list}>
+                <li>Device type</li>
+                <li>Browser type</li>
+                <li>IP address</li>
+                <li>App version</li>
+                <li>Crash reports</li>
+                <li>Usage analytics</li>
+              </ul>
+            </SubSection>
 
-            <p>
-              We use collected information to:
-            </p>
+            <SubSection title="Authentication Tokens">
+              <p>
+                We use secure authentication tokens to keep you signed in and
+                protect your account.
+              </p>
+            </SubSection>
+          </Section>
 
-            <ul className="list-disc pl-6 mt-4 space-y-2">
-              <li>Provide and maintain the Habio service</li>
+          <Section title="2. How We Use Your Information">
+            <p>We use collected information to:</p>
+
+            <ul style={styles.list}>
+              <li>Provide and maintain the OurOrbit service</li>
               <li>Sync your data across devices</li>
               <li>Improve app functionality and performance</li>
               <li>Personalize your experience</li>
@@ -109,152 +88,270 @@ export default function PrivacyPolicy() {
               <li>Detect abuse, fraud, or security issues</li>
             </ul>
 
-            <p className="mt-4 font-medium">
+            <p style={styles.important}>
               We do not sell your personal information.
             </p>
-          </section>
+          </Section>
 
-          <section>
-            <h2 className="text-2xl font-semibold mb-4">
-              3. Data Storage & Security
-            </h2>
-
+          <Section title="3. Data Storage & Security">
             <p>
               We take reasonable technical and organizational measures to
               protect your information, including:
             </p>
 
-            <ul className="list-disc pl-6 mt-4 space-y-2">
-              <li>Encrypted connections (HTTPS)</li>
+            <ul style={styles.list}>
+              <li>Encrypted HTTPS connections</li>
               <li>Secure password hashing</li>
               <li>Authentication protections</li>
               <li>Restricted server access</li>
             </ul>
 
-            <p className="mt-4">
-              However, no system can be guaranteed 100% secure.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="text-2xl font-semibold mb-4">
-              4. Third-Party Services
-            </h2>
-
             <p>
-              Habio may use third-party providers for:
+              However, no system can be guaranteed to be completely secure.
+            </p>
+          </Section>
+
+          <Section title="4. Third-Party Services">
+            <p>
+              OurOrbit may use trusted third-party providers for:
             </p>
 
-            <ul className="list-disc pl-6 mt-4 space-y-2">
+            <ul style={styles.list}>
               <li>Cloud hosting</li>
               <li>Database infrastructure</li>
               <li>Analytics</li>
               <li>Authentication</li>
               <li>Error monitoring</li>
+              <li>Email delivery</li>
             </ul>
 
-            <p className="mt-4">
+            <p>
               These providers may process data on our behalf solely to operate
               the service.
             </p>
-          </section>
+          </Section>
 
-          <section>
-            <h2 className="text-2xl font-semibold mb-4">
-              5. Cookies & Local Storage
-            </h2>
-
+          <Section title="5. Cookies & Local Storage">
             <p>
-              Habio may use cookies or local device storage to:
+              OurOrbit may use cookies or local device storage to:
             </p>
 
-            <ul className="list-disc pl-6 mt-4 space-y-2">
+            <ul style={styles.list}>
               <li>Keep you logged in</li>
               <li>Remember preferences</li>
               <li>Improve application performance</li>
             </ul>
 
-            <p className="mt-4">
+            <p>
               You can control cookies through your browser settings.
             </p>
-          </section>
+          </Section>
 
-          <section>
-            <h2 className="text-2xl font-semibold mb-4">
-              6. Children's Privacy
-            </h2>
-
+          <Section title="6. Children's Privacy">
             <p>
-              Habio is not intended for children under 13 years old. We do not
-              knowingly collect personal information from children.
+              OurOrbit is not intended for children under 13 years old. We do
+              not knowingly collect personal information from children.
             </p>
-          </section>
+          </Section>
 
-          <section>
-            <h2 className="text-2xl font-semibold mb-4">
-              7. Your Rights
-            </h2>
-
+          <Section title="7. Your Rights">
             <p>
               Depending on your location, you may have rights to:
             </p>
 
-            <ul className="list-disc pl-6 mt-4 space-y-2">
+            <ul style={styles.list}>
               <li>Access your data</li>
               <li>Correct inaccurate information</li>
               <li>Delete your account</li>
               <li>Request a copy of your data</li>
             </ul>
 
-            <p className="mt-4">
+            <p>
               To request account deletion or data access, contact:
             </p>
 
-            <p className="mt-4 font-medium">
-              support@habioapp.co
+            <p style={styles.contact}>
+              support@ourorbit.net
             </p>
-          </section>
+          </Section>
 
-          <section>
-            <h2 className="text-2xl font-semibold mb-4">
-              8. Account Deletion
-            </h2>
-
+          <Section title="8. Account Deletion">
             <p>
               You may request deletion of your account and associated data by
               contacting support. We may retain limited information as required
               for legal, security, or operational purposes.
             </p>
-          </section>
+          </Section>
 
-          <section>
-            <h2 className="text-2xl font-semibold mb-4">
-              9. Changes to This Policy
-            </h2>
-
+          <Section title="9. Changes to This Policy">
             <p>
               We may update this Privacy Policy from time to time. Updated
               versions will be posted on this page with a revised effective
               date.
             </p>
-          </section>
+          </Section>
 
-          <section>
-            <h2 className="text-2xl font-semibold mb-4">
-              10. Contact
-            </h2>
-
+          <Section title="10. Contact">
             <p>
               If you have questions about this Privacy Policy, contact:
             </p>
 
-            <div className="mt-4">
-              <p className="font-semibold">Habio Support</p>
-              <p>support@habioapp.co</p>
+            <div style={styles.contactBox}>
+              <p style={styles.contactTitle}>OurOrbit Support</p>
+              <p style={styles.contactEmail}>
+                support@ourorbit.net
+              </p>
             </div>
-          </section>
+          </Section>
         </div>
       </div>
     </div>
   );
 }
+
+function Section({ title, children }) {
+  return (
+    <section style={styles.section}>
+      <h2 style={styles.sectionTitle}>{title}</h2>
+      <div style={styles.sectionContent}>{children}</div>
+    </section>
+  );
+}
+
+function SubSection({ title, children }) {
+  return (
+    <div style={styles.subSection}>
+      <h3 style={styles.subSectionTitle}>{title}</h3>
+      <div>{children}</div>
+    </div>
+  );
+}
+
+const styles = {
+  page: {
+    minHeight: "100vh",
+    background: "var(--bg)",
+    color: "var(--text)",
+  },
+
+  container: {
+    maxWidth: 960,
+    margin: "0 auto",
+    padding: "72px 24px",
+  },
+
+  hero: {
+    marginBottom: 42,
+  },
+
+  badge: {
+    display: "inline-flex",
+    alignItems: "center",
+    borderRadius: 999,
+    background: "#fff7df",
+    color: "var(--primary-dark)",
+    border: "1px solid rgba(242, 184, 75, 0.5)",
+    padding: "7px 12px",
+    fontWeight: 900,
+    fontSize: 13,
+    marginBottom: 18,
+  },
+
+  title: {
+    margin: 0,
+    color: "var(--text)",
+    fontSize: 54,
+    lineHeight: 1,
+    letterSpacing: "-0.06em",
+  },
+
+  subtitle: {
+    margin: "14px 0 0",
+    color: "var(--muted)",
+    fontWeight: 700,
+    fontSize: 15,
+  },
+
+  content: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 34,
+  },
+
+  section: {
+    background: "var(--surface)",
+    border: "1px solid var(--border)",
+    borderRadius: 30,
+    padding: 28,
+    boxShadow: "var(--shadow)",
+  },
+
+  sectionTitle: {
+    margin: 0,
+    color: "var(--text)",
+    fontSize: 28,
+    fontWeight: 900,
+    letterSpacing: "-0.04em",
+  },
+
+  sectionContent: {
+    marginTop: 18,
+    color: "var(--muted)",
+    fontWeight: 700,
+    lineHeight: 1.75,
+    fontSize: 15,
+  },
+
+  subSection: {
+    marginBottom: 24,
+  },
+
+  subSectionTitle: {
+    margin: "0 0 10px",
+    color: "var(--text)",
+    fontSize: 18,
+    fontWeight: 900,
+  },
+
+  list: {
+    paddingLeft: 22,
+    marginTop: 14,
+    marginBottom: 18,
+    display: "flex",
+    flexDirection: "column",
+    gap: 8,
+  },
+
+  important: {
+    marginTop: 18,
+    color: "var(--text)",
+    fontWeight: 900,
+  },
+
+  contact: {
+    marginTop: 14,
+    color: "var(--primary-dark)",
+    fontWeight: 900,
+  },
+
+  contactBox: {
+    marginTop: 18,
+    padding: 20,
+    borderRadius: 22,
+    background: "rgba(79, 143, 91, 0.08)",
+    border: "1px solid rgba(79, 143, 91, 0.18)",
+  },
+
+  contactTitle: {
+    margin: 0,
+    color: "var(--text)",
+    fontWeight: 900,
+    fontSize: 18,
+  },
+
+  contactEmail: {
+    margin: "8px 0 0",
+    color: "var(--primary-dark)",
+    fontWeight: 900,
+  },
+};
