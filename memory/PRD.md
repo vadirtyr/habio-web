@@ -53,3 +53,9 @@ Social/community feature set that existed in mobile but not web:
 
 ## Test credentials
 See /app/memory/test_credentials.md (webtester / orbitfriend, password TestPass123!).
+
+## Google account linking (2026-06)
+- Settings has "Connected accounts" -> ConnectGoogleRow: Connect (password-only users) and Disconnect (linked users with a password).
+- AuthContext: connectGoogle (reuses /auth/google with mismatch guard) and unlinkGoogle (POST /auth/unlink-google).
+- Profile shows "Linked with Google" badge when auth_providers includes google.
+- BACKEND: /auth/unlink-google endpoint added to /app/backend/server.py (local) with lock-out guard (rejects unlink if no password_hash). MUST be added to the production habio-backend repo separately for prod to work. Verified end-to-end locally (happy path + idempotent + guard).

@@ -178,6 +178,24 @@ export function AuthProvider({ children }) {
     setUser(false);
   }, [clearToken]);
 
+  const unlinkGoogle = useCallback(async () => {
+    try {
+      const { data } = await api.post("/auth/unlink-google");
+
+      saveToken(data);
+
+      const updatedUser = normalizeUser(data);
+      setUser(updatedUser);
+
+      return { ok: true, user: updatedUser };
+    } catch (e) {
+      return {
+        ok: false,
+        error: formatApiError(e.response?.data?.detail) || e.message,
+      };
+    }
+  }, [saveToken]);
+
   const updateBalance = useCallback((newBalance) => {
     setUser((currentUser) =>
       currentUser && typeof currentUser === "object"
@@ -208,6 +226,7 @@ export function AuthProvider({ children }) {
       login,
       loginWithGoogle,
       connectGoogle,
+      unlinkGoogle,
       register,
       logout,
       refresh,
@@ -221,6 +240,7 @@ export function AuthProvider({ children }) {
       login,
       loginWithGoogle,
       connectGoogle,
+      unlinkGoogle,
       register,
       logout,
       refresh,

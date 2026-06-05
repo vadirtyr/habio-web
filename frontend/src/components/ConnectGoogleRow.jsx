@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { GoogleLogin } from "@react-oauth/google";
-import { BadgeCheck } from "lucide-react";
+import { BadgeCheck, Unlink } from "lucide-react";
 import { toast } from "sonner";
 
 import { useAuth } from "@/context/AuthContext";
@@ -32,12 +32,14 @@ function GoogleGlyph() {
 }
 
 export default function ConnectGoogleRow() {
-  const { user, connectGoogle } = useAuth();
+  const { user, connectGoogle, unlinkGoogle } = useAuth();
   const [submitting, setSubmitting] = useState(false);
 
-  const isLinked = Array.isArray(user?.auth_providers)
-    ? user.auth_providers.includes("google")
-    : false;
+  const providers = Array.isArray(user?.auth_providers)
+    ? user.auth_providers
+    : [];
+  const isLinked = providers.includes("google");
+  const hasPassword = providers.includes("password");
 
   async function handleSuccess(credentialResponse) {
     const idToken = credentialResponse?.credential;
@@ -58,6 +60,20 @@ export default function ConnectGoogleRow() {
     }
   }
 
+  async function handleUnlink() {
+    if (submitting) return;
+
+    setSubmitting(true);
+    const res = await unlinkGoogle();
+    setSubmitting(false);
+
+    if (res.ok) {
+      toast.success("Google account disconnected");
+    } else {
+      toast.error(res.error);
+    }
+  }
+
   return (
     <div style={styles.card} data-testid="connect-google-row">
       <div style={styles.iconWrap}>
@@ -68,16 +84,36 @@ export default function ConnectGoogleRow() {
         <h2 style={styles.title}>Google</h2>
         <p style={styles.description}>
           {isLinked
-            ? "Your Google account is connected. You can sign in with Google."
+            ? hasPassword
+              ? "Your Google account is connected. You can disconnect it anytime."
+              : "Connected via Google. Set a password before disconnecting so you don't lose access."
             : "Connect Google to sign in with one tap next time."}
         </p>
       </div>
 
       {isLinked ? (
-        <span style={styles.connectedPill} data-testid="google-connected-pill">
-          <BadgeCheck size={16} />
-          Connected
-        </span>
+        <div style={styles.linkedActions}>
+          <span style={styles.connectedPill} data-testid="google-connected-pill">
+            <BadgeCheck size={16} />
+            Connected
+          </span>
+
+          {hasPassword && (
+            <button
+              type="button"
+              onClick={handleUnlink}
+              disabled={submitting}
+              style={{
+                ...styles.unlinkButton,
+                ...(submitting ? { opacity: 0.6, cursor: "not-allowed" } : {}),
+              }}
+              data-testid="unlink-google-button"
+            >
+              <Unlink size={15} />
+              {submitting ? "Disconnecting..." : "Disconnect"}
+            </button>
+          )}
+        </div>
       ) : !GOOGLE_CLIENT_ID ? (
         <span style={styles.unavailable}>Not configured</span>
       ) : (
@@ -156,6 +192,26 @@ const styles = {
     fontSize: 13,
     border: "1px solid rgba(79, 143, 91, 0.2)",
     flex: "0 0 auto",
+  },
+  linkedActions: {
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    flexWrap: "wrap",
+    flex: "0 0 auto",
+  },
+  unlinkButton: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 7,
+    padding: "9px 14px",
+    borderRadius: 999,
+    background: "var(--surface)",
+    color: "var(--danger)",
+    fontWeight: 900,
+    fontSize: 13,
+    border: "1px solid rgba(217, 83, 79, 0.35)",
+    cursor: "pointer",
   },
   unavailable: {
     color: "var(--muted)",
