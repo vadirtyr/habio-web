@@ -42,6 +42,7 @@ export default function Notifications() {
     );
     try {
       await notificationApi.markRead(id);
+      window.dispatchEvent(new Event("habio:notif-refresh"));
     } catch (err) {
       // revert silently handled by reload on error
     }
@@ -51,6 +52,7 @@ export default function Notifications() {
     setNotifications((cur) => cur.map((n) => ({ ...n, read: true })));
     try {
       await notificationApi.markAllRead();
+      window.dispatchEvent(new Event("habio:notif-refresh"));
       toast.success("All notifications marked read");
     } catch (err) {
       toast.error(formatApiError(err.response?.data?.detail) || err.message);

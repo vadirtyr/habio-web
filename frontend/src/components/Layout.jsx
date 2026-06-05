@@ -67,9 +67,15 @@ export default function Layout({ children }) {
     loadUnread();
     const interval = setInterval(loadUnread, 30000);
 
+    function handleRefresh() {
+      loadUnread();
+    }
+    window.addEventListener("habio:notif-refresh", handleRefresh);
+
     return () => {
       active = false;
       clearInterval(interval);
+      window.removeEventListener("habio:notif-refresh", handleRefresh);
     };
   }, []);
 
