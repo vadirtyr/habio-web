@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Award,
+  BadgeCheck,
   CalendarCheck,
   Coins,
   Flame,
@@ -18,9 +19,11 @@ import {
 import { toast } from "sonner";
 
 import { profileApi, formatApiError } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
 
 export default function Profile() {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -63,6 +66,9 @@ export default function Profile() {
     : "—";
   const featured = profile.featured_achievement;
   const isPublic = profile.is_public;
+  const isGoogleLinked = Array.isArray(user?.auth_providers)
+    ? user.auth_providers.includes("google")
+    : false;
 
   return (
     <div style={styles.page} data-testid="profile-page">
@@ -89,6 +95,12 @@ export default function Profile() {
           <Badge Icon={Sparkles} label={`Level ${level}`} />
           <Badge Icon={Flame} label={`${profile.streak_days || 0} Day Streak`} />
           <Badge Icon={isPublic ? Globe : Lock} label={isPublic ? "Public" : "Private"} />
+          {isGoogleLinked && (
+            <span style={styles.googleBadge} data-testid="google-linked-badge">
+              <BadgeCheck size={15} />
+              Linked with Google
+            </span>
+          )}
         </div>
 
         <button
@@ -223,6 +235,18 @@ const styles = {
     fontWeight: 900,
     fontSize: 13,
     border: "1px solid rgba(79, 143, 91, 0.18)",
+  },
+  googleBadge: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 7,
+    padding: "9px 13px",
+    borderRadius: 999,
+    background: "#eef4ff",
+    color: "#2f6fed",
+    fontWeight: 900,
+    fontSize: 13,
+    border: "1px solid rgba(47, 111, 237, 0.22)",
   },
   editButton: {
     marginTop: 22,

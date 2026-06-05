@@ -14,6 +14,7 @@ import {
 import { toast } from "sonner";
 
 import { useAuth } from "@/context/AuthContext";
+import ConnectGoogleRow from "@/components/ConnectGoogleRow";
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -99,6 +100,11 @@ export default function Settings() {
           description="Permanently delete your account and associated data."
           to="/delete-account"
         />
+      </section>
+
+      <section style={styles.connectionsSection}>
+        <h2 style={styles.sectionHeading}>Connected accounts</h2>
+        <ConnectGoogleRow />
       </section>
 
       <section style={styles.footerCard}>
@@ -235,6 +241,18 @@ const styles = {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
     gap: 16,
+  },
+  connectionsSection: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 14,
+  },
+  sectionHeading: {
+    margin: 0,
+    color: "var(--text)",
+    fontSize: 22,
+    fontWeight: 900,
+    letterSpacing: "-0.03em",
   },
   cardLink: {
     color: "inherit",

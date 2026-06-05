@@ -128,6 +128,45 @@ export function AuthProvider({ children }) {
     [saveToken]
   );
 
+  const connectGoogle = useCallback(
+    async (idToken) => {
+      // Link a Google account to the CURRENTLY logged-in user by reusing the
+      // backend /auth/google endpoint (it links by matching email/google_id).
+      // Guard against accidentally switching into a different account.
+      const prevToken = localStorage.getItem(TOKEN_KEY);
+      const prevId =
+        user && typeof user === "object" ? user.id : null;
+
+      try {
+        const { data } = await api.post("/auth/google", { id_token: idToken });
+        const linkedUser = normalizeUser(data);
+
+        if (prevId && linkedUser?.id && linkedUser.id !== prevId) {
+          // The Google account belongs to a different OurOrbit user.
+          // Restore the original session and do NOT switch.
+          if (prevToken) localStorage.setItem(TOKEN_KEY, prevToken);
+          return {
+            ok: false,
+            error:
+              "That Google account is linked to a different OurOrbit user. Use the Google account that matches your email.",
+          };
+        }
+
+        saveToken(data);
+        setUser(linkedUser);
+
+        return { ok: true, user: linkedUser };
+      } catch (e) {
+        if (prevToken) localStorage.setItem(TOKEN_KEY, prevToken);
+        return {
+          ok: false,
+          error: formatApiError(e.response?.data?.detail) || e.message,
+        };
+      }
+    },
+    [saveToken, user]
+  );
+
   const logout = useCallback(async () => {
     try {
       await api.post("/auth/logout");
@@ -168,6 +207,7 @@ export function AuthProvider({ children }) {
       loading,
       login,
       loginWithGoogle,
+      connectGoogle,
       register,
       logout,
       refresh,
@@ -180,6 +220,7 @@ export function AuthProvider({ children }) {
       loading,
       login,
       loginWithGoogle,
+      connectGoogle,
       register,
       logout,
       refresh,
