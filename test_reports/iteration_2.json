@@ -1,0 +1,39 @@
+{
+  "summary": "Full end-to-end UI testing of habio-web SOCIAL/COMMUNITY parity on https://habio-web.preview.emergentagent.com. CORS is now resolved (backend reachable via same-origin /api proxy) — login works and ALL 13 requested feature flows were exercised. 12/13 PASS, 1 minor UX issue: the sidebar 'nav-unread-badge' does not clear immediately when 'mark-all-read-button' is pressed (clears only on next 30s poll or route remount). All data-testids match code. Backend integration is healthy.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "Notifications -> Mark all read -> sidebar badge",
+        "issue": "After clicking [data-testid='mark-all-read-button'] the API call succeeds (notifications visually marked read in list), but the sidebar [data-testid='nav-unread-badge'] does NOT update until the next 30s poll in Layout.jsx (or a route remount/page reload). Root cause: Layout.jsx (lines 55-74) polls notificationApi.getUnreadCount() on a 30s interval with no cross-component event/state bridge from Notifications.jsx markAllRead(). After page.reload() the badge correctly disappears, confirming the backend state is right and only the in-memory sidebar count is stale.",
+        "affected_selectors": ["[data-testid='nav-unread-badge']", "[data-testid='mark-all-read-button']"]
+      }
+    ],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Bridge Notifications.jsx markAllRead -> Layout unread badge. Easiest fix: lift unreadCount into AppStateContext (or a small custom event / window dispatchEvent('habio:notifications-read')) and have Layout subscribe, OR expose a refetch ref via context that Notifications calls after markAllRead. Acceptance: clicking mark-all-read-button hides nav-unread-badge within ~500ms without a reload."
+  ],
+  "critical_code_review_comments": [
+    "Layout.jsx polls unread count every 30s but never listens for local mutations — leads to stale badge after mark-all-read until next interval. Add a context-based invalidation hook.",
+    "All requested social pages (SocialFeed, ActivityFeed, PublicActivity, UserSearch, Profile, EditProfile, PublicProfile, Followers, Following, Notifications, WeeklyRecap, ChooseHabit) expose the exact data-testids listed in the spec — verified at runtime.",
+    "ActivityTimeline.jsx optimistic like/cheer toggle works correctly (verified count goes Like 0 -> Like 1 and Cheer 0 -> Cheer 1).",
+    "PublicProfile stat cards use data-testids 'public-stat-followers' and 'public-stat-following' (not 'followers-stat' / 'following-stat'); both navigate correctly and the target pages render with data-testid='followers-page' / 'following-page' as required by the spec. No code change needed.",
+    "ChooseHabit.jsx template cards use data-testid='habit-template-<Name>' (e.g., habit-template-Drink water) — spec mentions generic 'template-' prefix; current implementation works and create-habits-button enables once a template is selected ('Start with 1 habit').",
+    "Friend Feed correctly surfaces orbitfriend's 'Morning walk' completion in webtester's /feed after follow — social graph backend wiring is healthy.",
+    "Edit Profile save returns to /profile with a success toast and persists bio + public flag (verified)."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (not tested per request)", "frontend": "92% (12/13 feature flows pass; 1 minor stale-badge UX bug)"},
+  "test_credentials": "habiotest+web1@example.com / TestPass123! (webtester) and habiotest+friend1@example.com / TestPass123! (orbitfriend) — both work via the preview /api proxy.",
+  "seed_data_creation": "Created 1 habit ('Drink water') as webtester via /habits/choose template flow (single habit, as instructed). Like+Cheer reactions toggled on webtester's own activity item 7b2161b3-4c8c-439f-b416-125803161b13. Webtester followed orbitfriend during the test and then unfollowed at cleanup (current state: NOT following). Bio updated to a timestamped string. Mark-all-read was triggered on orbitfriend's notifications so the previous follow notification is now read.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Tested in viewport 1920x1080, sidebar visible. All 13 requested feature flows executed end-to-end. Only remaining issue: sidebar nav-unread-badge does not clear until next 30s poll after mark-all-read. To re-verify after fix: login as orbitfriend, ensure a fresh follow-notification exists (have webtester follow orbitfriend first), open /notifications, click mark-all-read-button, assert nav-unread-badge disappears within ~1s WITHOUT page reload. Template create selector is data-testid='habit-template-<Name>' (NOT 'template-<...>'). Public-profile stat cards are data-testid='public-stat-followers' and 'public-stat-following'.",
+  "rca of the issue": "BUG: Sidebar unread badge stale after mark-all-read. REPRO: 1) login as webtester, follow orbitfriend (creates notification), 2) login as orbitfriend, observe nav-unread-badge=1, 3) go to /notifications, click [data-testid=mark-all-read-button], 4) wait 2-4s -> badge still visible, 5) reload page -> badge disappears. ROOT CAUSE: /app/frontend/src/components/Layout.jsx maintains unreadCount via a 30-second setInterval poll only; /app/frontend/src/pages/Notifications.jsx markAllRead() only updates its own local state and never signals the sibling Layout component. There is no shared store / event for invalidation. MITIGATION: (a) Put unreadCount in AppStateContext and expose a refetch() consumed by Notifications.markAllRead, or (b) dispatch a CustomEvent('habio:notif-unread-changed') after successful markAllRead and have Layout addEventListener it. Either approach is <20 LoC."
+}
