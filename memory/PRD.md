@@ -29,6 +29,10 @@ Social/community feature set that existed in mobile but not web:
 - Habit templates (/habits/choose) reachable from Habits "Templates" button
 
 ## What's been implemented (2026-06)
+- Google Sign-In (web): "Continue with Google" button on Login + Register using @react-oauth/google
+  (ID-token/credential flow) -> existing backend POST /auth/google. Gated on REACT_APP_GOOGLE_CLIENT_ID;
+  index.js wraps App in GoogleOAuthProvider when the id is present. AuthContext.loginWithGoogle added.
+  Button render verified on /login. No backend changes (endpoint already existed).
 - New pages: SocialFeed, ActivityFeed, PublicActivity, UserSearch, Profile, EditProfile,
   PublicProfile, Followers, Following, Notifications, WeeklyRecap, ChooseHabit.
 - New components: ActivityTimeline (reactions), UserRow.
