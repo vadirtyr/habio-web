@@ -116,7 +116,7 @@ export default function Layout({ children }) {
             onClick={() => navigate("/")}
           >
            <img
-              src="/icon.png"
+              src="/ourorbit-logo.png"
               alt="OurOrbit"
               style={styles.logoImage}
             />

@@ -3,7 +3,6 @@ import { Link, useNavigate } from "react-router-dom";
 import {
   Lock,
   Mail,
-  Rocket,
   Sparkles,
   User,
 } from "lucide-react";
@@ -49,9 +48,12 @@ export default function Register() {
 
       <div style={styles.shell}>
         <div style={styles.brand}>
-          <div style={styles.logo}>
-            <Rocket size={24} />
-          </div>
+          <img
+            src="/ourorbit-logo.png"
+            alt="OurOrbit"
+            style={styles.logo}
+            data-testid="brand-logo"
+          />
 
           <div>
             <div style={styles.brandName}>OurOrbit</div>
@@ -208,13 +210,10 @@ const styles = {
     width: 58,
     height: 58,
     borderRadius: 22,
-    background:
-      "linear-gradient(135deg, var(--primary), var(--primary-dark))",
-    color: "white",
-    display: "grid",
-    placeItems: "center",
+    objectFit: "cover",
     boxShadow: "0 12px 28px rgba(0,0,0,0.16)",
     flex: "0 0 auto",
+    display: "block",
   },
 
   brandName: {
