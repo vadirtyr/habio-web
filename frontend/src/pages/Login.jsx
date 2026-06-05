@@ -4,6 +4,8 @@ import { useAuth } from "@/context/AuthContext";
 import { Leaf, Mail, Lock } from "lucide-react";
 import { toast } from "sonner";
 
+import GoogleSignInButton from "@/components/GoogleSignInButton";
+
 export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -88,6 +90,8 @@ export default function Login() {
               {submitting ? "Logging in..." : "Log in"}
             </button>
           </form>
+
+          <GoogleSignInButton redirectTo="/" />
 
           <div style={styles.footerLinks}>
             <p style={styles.registerText}>

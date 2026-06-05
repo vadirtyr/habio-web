@@ -107,6 +107,27 @@ export function AuthProvider({ children }) {
     [saveToken]
   );
 
+  const loginWithGoogle = useCallback(
+    async (idToken) => {
+      try {
+        const { data } = await api.post("/auth/google", { id_token: idToken });
+
+        saveToken(data);
+
+        const loggedInUser = normalizeUser(data);
+        setUser(loggedInUser);
+
+        return { ok: true, user: loggedInUser };
+      } catch (e) {
+        return {
+          ok: false,
+          error: formatApiError(e.response?.data?.detail) || e.message,
+        };
+      }
+    },
+    [saveToken]
+  );
+
   const logout = useCallback(async () => {
     try {
       await api.post("/auth/logout");
@@ -146,6 +167,7 @@ export function AuthProvider({ children }) {
       user,
       loading,
       login,
+      loginWithGoogle,
       register,
       logout,
       refresh,
@@ -157,6 +179,7 @@ export function AuthProvider({ children }) {
       user,
       loading,
       login,
+      loginWithGoogle,
       register,
       logout,
       refresh,

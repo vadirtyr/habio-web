@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+import GoogleSignInButton from "@/components/GoogleSignInButton";
 import { useAuth } from "@/context/AuthContext";
 
 export default function Register() {
@@ -125,6 +126,8 @@ export default function Register() {
               {submitting ? "Creating account..." : "Create account"}
             </button>
           </form>
+
+          <GoogleSignInButton redirectTo="/" />
 
           <div style={styles.footer}>
             <p style={styles.loginText}>
