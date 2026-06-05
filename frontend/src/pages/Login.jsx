@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
-import { Leaf, Mail, Lock } from "lucide-react";
+import { Mail, Lock } from "lucide-react";
 import { toast } from "sonner";
 
 import GoogleSignInButton from "@/components/GoogleSignInButton";
@@ -33,10 +33,12 @@ export default function Login() {
     <div style={styles.page}>
       <div style={styles.shell}>
         <div style={styles.brand}>
-          <div style={styles.logo}>
-            H
-            <Leaf size={16} strokeWidth={3} style={styles.logoLeaf} />
-          </div>
+          <img
+            src="/ourorbit-logo.png"
+            alt="OurOrbit"
+            style={styles.logo}
+            data-testid="brand-logo"
+          />
 
           <div>
             <div style={styles.brandName}>OurOrbit</div>
@@ -159,14 +161,9 @@ const styles = {
     width: 54,
     height: 54,
     borderRadius: 18,
-    background: "linear-gradient(135deg, var(--primary), var(--primary-dark))",
-    color: "white",
-    display: "grid",
-    placeItems: "center",
-    fontWeight: 900,
-    fontSize: 28,
+    objectFit: "cover",
     boxShadow: "var(--shadow)",
-    position: "relative",
+    display: "block",
   },
 
   logoLeaf: {
