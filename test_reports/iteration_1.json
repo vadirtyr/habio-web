@@ -1,0 +1,45 @@
+{
+  "summary": "Frontend testing on https://habio-web.preview.emergentagent.com is fully BLOCKED by CORS. The live production backend at https://api.habioapp.co returns HTTP 400 'Disallowed CORS origin' on the preflight OPTIONS /api/auth/login when called from the preview origin. As a result login fails in the browser and none of the 13 requested features (sidebar nav, /activity, reactions, /profile, /profile/edit, /people search, /u/orbitfriend follow, followers/following, /feed, /notifications, /weekly-recap, /habits/choose) could be exercised end-to-end through the UI. A direct curl POST to /api/auth/login (no Origin enforcement) returns 200 with a valid JWT for habiotest+web1@example.com / TestPass123!, confirming the backend itself is healthy and the credentials are correct — the failure is purely a backend CORS allowlist gap, not a frontend bug.",
+  "backend_issues": {
+    "critical": [
+      {
+        "endpoint": "OPTIONS https://api.habioapp.co/api/* (all endpoints)",
+        "issue": "CORS preflight rejected with 400 'Disallowed CORS origin' when Origin is https://habio-web.preview.emergentagent.com. Response headers include 'access-control-allow-methods', 'access-control-allow-credentials: true', 'access-control-allow-headers: content-type' but NO 'access-control-allow-origin', so the browser blocks every XHR. Body literally returns 'Disallowed CORS origin'. This blocks 100% of authenticated UI flows from the preview URL.",
+        "priority": "CRITICAL"
+      }
+    ],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "All authenticated flows (login -> dashboard, /activity, /profile, /people, /u/:username, /feed, /notifications, /weekly-recap, /habits/choose)",
+        "issue": "Browser console: 'Access to XMLHttpRequest at https://api.habioapp.co/api/auth/login from origin https://habio-web.preview.emergentagent.com has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No Access-Control-Allow-Origin header is present.' Login submit stalls and user never reaches /dashboard; protected routes redirect back to /login.",
+        "affected_selectors": ["[data-testid=login-submit-btn]", "[data-testid=activity-feed-page]", "[data-testid=profile-page]", "[data-testid=user-search-page]", "[data-testid=public-profile-page]", "[data-testid=social-feed-page]", "[data-testid=notifications-page]", "[data-testid=weekly-recap-page]", "[data-testid=choose-habit-page]"]
+      }
+    ],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Add https://habio-web.preview.emergentagent.com (and probably the wildcard *.preview.emergentagent.com) to the CORS allowlist on the production backend at api.habioapp.co. Verify by running:  curl -i -X OPTIONS https://api.habioapp.co/api/auth/login -H 'Origin: https://habio-web.preview.emergentagent.com' -H 'Access-Control-Request-Method: POST' -H 'Access-Control-Request-Headers: content-type'  — expect 200/204 with access-control-allow-origin echoing the origin.",
+    "Alternative (frontend-only) workaround if the backend allowlist cannot be changed quickly: add a CRA dev/proxy setup OR a reverse-proxy at the preview ingress so the SPA calls a same-origin path (e.g., /api/*) which is then proxied to api.habioapp.co; this avoids CORS entirely and matches the typical Emergent preview pattern (REACT_APP_BACKEND_URL pointing to the preview host).",
+    "After fix, re-run frontend tests — once login works, every other testid in the request is wired up correctly in code (verified by static review), so the rest should pass with minimal churn."
+  ],
+  "critical_code_review_comments": [
+    "Layout.jsx (NAV_ITEMS): 'Friend Feed', 'My Activity', 'Find People', 'Notifications', 'Weekly Recap', 'Profile' are all present and routed; notification unread badge uses data-testid='nav-unread-badge' and polls every 30s — looks good.",
+    "ActivityTimeline.jsx uses optimistic reaction updates with rollback on error — solid pattern; testids react-like-<id> / react-cheer-<id> match the spec.",
+    "Profile/EditProfile/UserSearch/PublicProfile/Followers/Following/Notifications/WeeklyRecap/ChooseHabit pages all expose the requested data-testids (verified by grep). No code-level bug found that would block the listed flows once CORS is resolved.",
+    "Minor: AuthContext stores token under 'habio_token' in localStorage and validates via /auth/me on mount — depends on the same CORS endpoint, so it will also fail today.",
+    "Frontend .env REACT_APP_BACKEND_URL is correctly set to https://api.habioapp.co with no trailing slash."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (not tested per request)", "frontend": "0% (blocked at login by CORS; static code review of all listed pages/testids passes)"},
+  "test_credentials": "habiotest+web1@example.com / TestPass123! (webtester) and habiotest+friend1@example.com / TestPass123! (orbitfriend) — both verified valid via direct curl POST to /api/auth/login (HTTP 200, JWT returned).",
+  "seed_data_creation": "None. No follows, habits, or profile edits were persisted because all UI actions failed before reaching the backend.",
+  "retest_needed": true,
+  "main_agent_can_self_test": false,
+  "context_for_next_testing_agent": "Re-run the same Playwright flow as soon as the CORS allowlist on api.habioapp.co includes the preview origin. The script in this iteration covered: login -> sidebar nav check -> /activity timeline + like/cheer toggle -> /profile + stats + Edit Profile bio + public toggle save -> /people search 'orbit' -> /u/orbitfriend follow toggle x2 -> view-activity nav -> followers/following pages -> /feed -> /notifications mark-all-read -> /weekly-recap -> /habits + habit-templates-button -> /habits/choose category chips + multi-select + create-habits-button. All selectors are correct per code; only CORS blocks them. Use cleanup step at the end to unfollow orbitfriend so live data stays minimal.",
+  "rca of the issue": "ROOT CAUSE: Production backend (FastAPI behind nginx at api.habioapp.co) has a strict CORS origin allowlist that does NOT include the Emergent preview host https://habio-web.preview.emergentagent.com. REPRODUCTION: 1) Open https://habio-web.preview.emergentagent.com/login in a browser, 2) submit valid credentials, 3) DevTools Network shows OPTIONS /api/auth/login -> 400 with body 'Disallowed CORS origin' and no Access-Control-Allow-Origin header, 4) the subsequent POST is never sent and the UI hangs on the Log in button. CONFIRMATION: curl -i -X OPTIONS https://api.habioapp.co/api/auth/login -H 'Origin: https://habio-web.preview.emergentagent.com' -H 'Access-Control-Request-Method: POST' -H 'Access-Control-Request-Headers: content-type' returns HTTP/2 400 + 'Disallowed CORS origin'. The same backend returns 200 to a non-browser POST (no Origin policing) proving the data path is fine. MITIGATION: Update the backend CORSMiddleware allow_origins (or allow_origin_regex) to include the preview host, OR add a same-origin reverse proxy on the preview ingress so the SPA hits /api/* on its own origin and the proxy forwards to api.habioapp.co (this also avoids leaking the production origin into browser CORS at all)."
+}

@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "34e60465-fdbd-49f1-80dc-8f4e13c94187"
+      }
+    },
+    "android": {
+      "package": "com.habiolabs.frontend"
+    }
+  }
+}
