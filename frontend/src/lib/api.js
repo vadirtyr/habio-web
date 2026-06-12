@@ -102,4 +102,21 @@ export const recapApi = {
   generate: () => api.post("/weekly-recaps/generate"),
 };
 
+export const orbitApi = {
+  list: () => api.get("/orbits"),
+  get: (orbitId) => api.get(`/orbits/${orbitId}`),
+  create: (data) => api.post("/orbits", data),
+  remove: (orbitId) => api.delete(`/orbits/${orbitId}`),
+  listInvites: () => api.get("/orbits/invites/pending"),
+  inviteMember: (orbitId, data) => api.post(`/orbits/${orbitId}/invites`, data),
+  acceptInvite: (inviteId) => api.post(`/orbits/invites/${inviteId}/accept`),
+  declineInvite: (inviteId) => api.post(`/orbits/invites/${inviteId}/decline`),
+  joinByCode: (code) => api.post(`/orbits/join/${encodeURIComponent(code)}`),
+  leave: (orbitId) => api.post(`/orbits/${orbitId}/leave`),
+  removeMember: (orbitId, userId) => api.delete(`/orbits/${orbitId}/members/${userId}`),
+  createGoal: (orbitId, data) => api.post(`/orbits/${orbitId}/goals`, data),
+  contribute: (orbitId, goalId, data = { amount: 1 }) =>
+    api.post(`/orbits/${orbitId}/goals/${goalId}/contribute`, data),
+};
+
 export default api;

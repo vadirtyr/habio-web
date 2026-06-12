@@ -66,6 +66,11 @@ import Following from "@/pages/Following";
 import Notifications from "@/pages/Notifications";
 import WeeklyRecap from "@/pages/WeeklyRecap";
 import ChooseHabit from "@/pages/ChooseHabit";
+import Orbits from "@/pages/Orbits";
+import CreateOrbit from "@/pages/CreateOrbit";
+import OrbitDetail from "@/pages/OrbitDetail";
+import OrbitMembers from "@/pages/OrbitMembers";
+import CreateOrbitGoal from "@/pages/CreateOrbitGoal";
 
 const TOAST_OPTIONS = {
   style: {
@@ -257,6 +262,12 @@ function App() {
                     </Shell>
                   }
                 />
+
+                <Route path="/orbits" element={<Shell><Orbits /></Shell>} />
+                <Route path="/orbits/new" element={<Shell><CreateOrbit /></Shell>} />
+                <Route path="/orbits/:orbitId" element={<Shell><OrbitDetail /></Shell>} />
+                <Route path="/orbits/:orbitId/members" element={<Shell><OrbitMembers /></Shell>} />
+                <Route path="/orbits/:orbitId/goals/new" element={<Shell><CreateOrbitGoal /></Shell>} />
 
                 <Route
                   path="/themes"

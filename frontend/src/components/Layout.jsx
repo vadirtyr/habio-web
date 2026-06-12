@@ -17,6 +17,7 @@ const NAV_ITEMS = [
   { label: "Rewards", path: "/rewards", icon: "🎁" },
   { label: "Quests", path: "/quests", icon: "🧭" },
   { label: "Achievements", path: "/achievements", icon: "🏆" },
+  { label: "Shared Orbits", path: "/orbits", icon: "🫂" },
   { label: "Friend Feed", path: "/feed", icon: "🛰️" },
   { label: "My Activity", path: "/activity", icon: "📡" },
   { label: "Find People", path: "/people", icon: "👥" },
