@@ -20,6 +20,7 @@ import { toast } from "sonner";
 
 import { profileApi, formatApiError } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import UserAvatar from "@/components/UserAvatar";
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -79,9 +80,7 @@ export default function Profile() {
       </header>
 
       <section style={styles.heroCard}>
-        <div style={styles.avatar}>
-          <User size={52} />
-        </div>
+        <UserAvatar user={profile} size={92} style={styles.avatar} />
 
         <h2 style={styles.displayName}>{profile.display_name || "Explorer"}</h2>
         <p style={styles.username}>

@@ -15,6 +15,7 @@ import { toast } from "sonner";
 
 import { useAuth } from "@/context/AuthContext";
 import ConnectGoogleRow from "@/components/ConnectGoogleRow";
+import UserAvatar from "@/components/UserAvatar";
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -42,9 +43,7 @@ export default function Settings() {
       </header>
 
       <section style={styles.profileCard}>
-        <div style={styles.avatar}>
-          <UserCircle size={34} />
-        </div>
+        <UserAvatar user={user} size={58} style={styles.avatar} />
 
         <div style={styles.profileMain}>
           <h2 style={styles.profileName}>{displayName}</h2>

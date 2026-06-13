@@ -1,5 +1,15 @@
 import React, { useEffect, useState } from "react";
-import { Bell, CheckCheck } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import {
+  Award,
+  Bell,
+  CheckCheck,
+  Flame,
+  HandMetal,
+  Orbit,
+  Sparkles,
+  UserPlus,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { notificationApi, formatApiError } from "@/lib/api";
@@ -17,6 +27,7 @@ function formatDate(value) {
 }
 
 export default function Notifications() {
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -37,6 +48,7 @@ export default function Notifications() {
   }, []);
 
   async function markRead(id) {
+    const previous = notifications;
     setNotifications((cur) =>
       cur.map((n) => (n.id === id ? { ...n, read: true } : n))
     );
@@ -44,19 +56,31 @@ export default function Notifications() {
       await notificationApi.markRead(id);
       window.dispatchEvent(new Event("habio:notif-refresh"));
     } catch (err) {
-      // revert silently handled by reload on error
+      setNotifications(previous);
+      toast.error(formatApiError(err.response?.data?.detail) || err.message);
     }
   }
 
   async function markAllRead() {
+    const previous = notifications;
     setNotifications((cur) => cur.map((n) => ({ ...n, read: true })));
     try {
       await notificationApi.markAllRead();
       window.dispatchEvent(new Event("habio:notif-refresh"));
       toast.success("All notifications marked read");
     } catch (err) {
+      setNotifications(previous);
       toast.error(formatApiError(err.response?.data?.detail) || err.message);
     }
+  }
+
+  async function openNotification(notification) {
+    if (!notification.read) {
+      await markRead(notification.id);
+    }
+
+    const destination = getNotificationDestination(notification);
+    if (destination) navigate(destination);
   }
 
   const hasUnread = notifications.some((n) => !n.read);
@@ -100,9 +124,18 @@ export default function Notifications() {
               key={n.id}
               style={{ ...styles.card, ...(n.read ? {} : styles.unreadCard) }}
               data-testid="notification-item"
+              role="button"
+              tabIndex={0}
+              onClick={() => openNotification(n)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  openNotification(n);
+                }
+              }}
             >
               <div style={styles.iconWrap}>
-                <Bell size={18} />
+                <NotificationIcon type={n.type} />
               </div>
 
               <div style={styles.copy}>
@@ -113,7 +146,10 @@ export default function Notifications() {
               {!n.read && (
                 <button
                   style={styles.markButton}
-                  onClick={() => markRead(n.id)}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    markRead(n.id);
+                  }}
                   data-testid={`mark-read-${n.id}`}
                 >
                   Mark read
@@ -125,6 +161,42 @@ export default function Notifications() {
       )}
     </div>
   );
+}
+
+function NotificationIcon({ type }) {
+  const Icon = {
+    followed_you: UserPlus,
+    achievement_unlock: Award,
+    level_up: Sparkles,
+    streak_milestone: Flame,
+    quest_complete: Award,
+    reward_unlocked: Sparkles,
+    activity_reaction: HandMetal,
+    weekly_recap: Bell,
+    orbit_invite: Orbit,
+  }[type] || Bell;
+
+  return <Icon size={18} />;
+}
+
+function getNotificationDestination(notification) {
+  switch (notification.type) {
+    case "weekly_recap":
+      return "/weekly-recap";
+    case "orbit_invite":
+      return "/orbits";
+    case "followed_you":
+      return "/people";
+    case "activity_reaction":
+    case "achievement_unlock":
+    case "level_up":
+    case "streak_milestone":
+    case "quest_complete":
+    case "reward_unlocked":
+      return "/feed";
+    default:
+      return null;
+  }
 }
 
 const styles = {
@@ -176,6 +248,8 @@ const styles = {
     border: "1px solid var(--border)",
     borderRadius: 22,
     boxShadow: "var(--shadow)",
+    cursor: "pointer",
+    outline: "none",
   },
   unreadCard: {
     border: "1px solid rgba(79, 143, 91, 0.45)",

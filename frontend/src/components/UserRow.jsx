@@ -1,5 +1,6 @@
 import React from "react";
 import { ChevronRight, User } from "lucide-react";
+import UserAvatar from "@/components/UserAvatar";
 
 export default function UserRow({ user, onClick }) {
   const displayName = user.display_name || user.name || user.username;
@@ -11,9 +12,7 @@ export default function UserRow({ user, onClick }) {
       style={styles.card}
       data-testid={`user-row-${user.username || user.id}`}
     >
-      <div style={styles.avatar}>
-        <User size={24} />
-      </div>
+      <UserAvatar user={user} size={50} style={styles.avatar} />
 
       <div style={styles.copy}>
         <strong style={styles.name}>{displayName}</strong>

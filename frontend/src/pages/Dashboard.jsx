@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Award,
+  Bell,
   CheckCircle2,
   Coins,
   Flame,
@@ -11,17 +12,21 @@ import {
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
-import { api } from "@/lib/api";
+import { api, notificationApi } from "@/lib/api";
 import { useAppState } from "@/context/AppStateContext";
+import { useAuth } from "@/context/AuthContext";
+import UserAvatar from "@/components/UserAvatar";
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const { refreshKey, coins, levelData } = useAppState();
+  const { user } = useAuth();
 
   const [habits, setHabits] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [rewards, setRewards] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   async function loadDashboard() {
     try {
@@ -54,6 +59,27 @@ export default function Dashboard() {
   useEffect(() => {
     loadDashboard();
   }, [refreshKey]);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadUnread() {
+      try {
+        const { data } = await notificationApi.getUnreadCount();
+        if (active) setUnreadCount(data?.count || 0);
+      } catch (err) {
+        // The sidebar still provides notification access if this request fails.
+      }
+    }
+
+    loadUnread();
+    window.addEventListener("habio:notif-refresh", loadUnread);
+
+    return () => {
+      active = false;
+      window.removeEventListener("habio:notif-refresh", loadUnread);
+    };
+  }, []);
 
   const completedHabits = habits.filter((h) => h.completed_today).length;
   const openTasks = tasks.filter((t) => !t.completed).length;
@@ -88,7 +114,32 @@ export default function Dashboard() {
     <div style={styles.page}>
       <section style={styles.hero}>
         <div>
-          <p style={styles.eyebrow}>Welcome back to OurOrbit</p>
+          <div style={styles.heroHeadingRow}>
+            <p style={styles.eyebrow}>Welcome back to OurOrbit</p>
+            <div style={styles.headerActions}>
+            <button type="button" style={styles.avatarButton} onClick={() => navigate("/profile")} aria-label="Open profile">
+              <UserAvatar user={user} size={42} />
+            </button>
+            <button
+              type="button"
+              style={styles.notificationButton}
+              onClick={() => navigate("/notifications")}
+              aria-label={
+                unreadCount
+                  ? `${unreadCount} unread notifications`
+                  : "Notifications"
+              }
+              data-testid="dashboard-notifications-button"
+            >
+              <Bell size={20} />
+              {unreadCount > 0 && (
+                <span style={styles.notificationBadge}>
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              )}
+            </button>
+            </div>
+          </div>
 
           <h1 style={styles.title}>Today’s Progress</h1>
 
@@ -328,6 +379,47 @@ const styles = {
     textTransform: "uppercase",
     letterSpacing: "0.12em",
     fontSize: 12,
+  },
+
+  heroHeadingRow: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 16,
+  },
+  headerActions: { display: "flex", alignItems: "center", gap: 10 },
+
+  notificationButton: {
+    position: "relative",
+    width: 44,
+    height: 44,
+    border: "1px solid var(--border)",
+    borderRadius: 16,
+    background: "var(--surface)",
+    color: "var(--text)",
+    display: "grid",
+    placeItems: "center",
+    cursor: "pointer",
+    boxShadow: "var(--shadow)",
+  },
+  avatarButton: { padding: 0, border: 0, borderRadius: 999, background: "transparent", cursor: "pointer" },
+
+  notificationBadge: {
+    position: "absolute",
+    top: -7,
+    right: -7,
+    minWidth: 20,
+    height: 20,
+    padding: "0 5px",
+    borderRadius: 999,
+    background: "var(--danger)",
+    color: "white",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: 11,
+    fontWeight: 900,
+    border: "2px solid var(--bg)",
   },
 
   hero: {

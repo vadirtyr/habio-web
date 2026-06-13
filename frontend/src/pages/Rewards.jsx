@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "@/lib/api";
 import { useAppState } from "@/context/AppStateContext";
@@ -6,7 +6,7 @@ import { toast } from "sonner";
 
 export default function Rewards() {
   const navigate = useNavigate();
-  const { coins, syncAppState } = useAppState();
+  const { coins, syncAppState, updateCoins } = useAppState();
 
   const [rewards, setRewards] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -29,7 +29,19 @@ export default function Rewards() {
     loadRewards();
   }, []);
 
-  async function redeemReward(rewardId, cost) {
+  const sortedRewards = useMemo(
+    () => [...rewards].sort((a, b) => {
+      const aCost = Number(a.cost ?? a.coin_cost ?? 50);
+      const bCost = Number(b.cost ?? b.coin_cost ?? 50);
+      const affordableDifference = Number(bCost <= coins) - Number(aCost <= coins);
+      return affordableDifference || aCost - bCost;
+    }),
+    [coins, rewards]
+  );
+
+  async function redeemReward(reward) {
+    const rewardId = reward.id || reward._id;
+    const cost = Number(reward.cost ?? reward.coin_cost ?? 50);
     if (coins < cost) {
       toast.error("Not enough coins yet");
       return;
@@ -38,12 +50,16 @@ export default function Rewards() {
     setRedeemingId(rewardId);
 
     try {
-      await api.post(`/rewards/${rewardId}/redeem`);
+      const { data } = await api.post(`/rewards/${rewardId}/redeem`);
+
+      if (data.new_balance !== undefined) updateCoins(data.new_balance);
 
       await syncAppState();
       await loadRewards();
 
-      toast.success("Reward redeemed!");
+      toast.success(`${reward.name} redeemed. ${data.new_balance ?? coins - cost} coins remaining`);
+      if (data.new_avatars?.length) toast.success(`${data.new_avatars.length} avatar unlocked`);
+      if (data.new_achievements?.length) toast.success(`${data.new_achievements.length} achievement unlocked`);
     } catch (err) {
       toast.error(
         err.response?.data?.detail || err.message || "Failed to redeem reward"
@@ -118,7 +134,7 @@ export default function Rewards() {
         </div>
       ) : (
         <div style={styles.grid}>
-          {rewards.map((reward) => {
+          {sortedRewards.map((reward) => {
             const rewardId = reward.id || reward._id;
             const cost = Number(reward.cost ?? reward.coin_cost ?? 50);
             const canAfford = coins >= cost;
@@ -138,6 +154,10 @@ export default function Rewards() {
                   <p style={styles.description}>{reward.description}</p>
                 )}
 
+                {Number(reward.times_redeemed ?? 0) > 0 && (
+                  <p style={styles.meta}>Redeemed {reward.times_redeemed} time{reward.times_redeemed === 1 ? "" : "s"}</p>
+                )}
+
                 <div style={styles.actions}>
                   <button
                     style={{
@@ -145,13 +165,13 @@ export default function Rewards() {
                       ...(!canAfford ? styles.disabledButton : {}),
                     }}
                     disabled={!canAfford || redeemingId === rewardId}
-                    onClick={() => redeemReward(rewardId, cost)}
+                    onClick={() => redeemReward(reward)}
                   >
                     {redeemingId === rewardId
                       ? "Redeeming..."
                       : canAfford
                       ? "Redeem"
-                      : "Need more coins"}
+                      : `Need ${cost - coins} more`}
                   </button>
 
                   <button

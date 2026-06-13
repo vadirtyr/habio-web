@@ -4,6 +4,7 @@ import { toast } from "sonner";
 
 import api, { formatApiError } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import { useAppState } from "@/context/AppStateContext";
 import { useTheme } from "@/context/ThemeContext";
 
 const TYPE_LABELS = {
@@ -24,6 +25,7 @@ const ACHIEVEMENT_LABELS = {
 
 export default function ThemeStore() {
   const { refresh } = useAuth();
+  const { coins, syncAppState, updateCoins } = useAppState();
   const { selectTheme: selectThemeFromContext, themes } = useTheme();
 
   const [loading, setLoading] = useState(true);
@@ -83,12 +85,17 @@ export default function ThemeStore() {
     setBusyTheme(themeId);
 
     try {
-      await api.post("/themes/purchase", {
+      const { data: purchaseData } = await api.post("/themes/purchase", {
         theme_id: themeId,
       });
 
+      if (purchaseData.new_balance !== undefined) {
+        updateCoins(purchaseData.new_balance);
+      }
+
       toast.success("Theme purchased");
       await loadThemes();
+      await syncAppState();
       await refresh?.();
     } catch (err) {
       toast.error(formatApiError(err?.response?.data?.detail));
@@ -124,14 +131,19 @@ export default function ThemeStore() {
     }
 
     if (theme.type === "store") {
+      const shortfall = Math.max(0, Number(theme.price || 0) - coins);
       return (
         <button
-          style={styles.button}
-          disabled={busyTheme === theme.id}
+          style={{ ...styles.button, ...(shortfall > 0 ? styles.lockedButton : {}) }}
+          disabled={busyTheme === theme.id || shortfall > 0}
           onClick={() => purchaseTheme(theme.id)}
         >
           <Coins size={17} />
-          {busyTheme === theme.id ? "Buying..." : `Buy for ${theme.price}`}
+          {busyTheme === theme.id
+            ? "Buying..."
+            : shortfall > 0
+              ? `Need ${shortfall} more`
+              : `Buy for ${theme.price}`}
         </button>
       );
     }
@@ -192,6 +204,7 @@ export default function ThemeStore() {
           <div>
             <strong>Level {data.level_data?.level ?? 1}</strong>
             <span>{data.level_data?.current_xp ?? 0} XP</span>
+            <span>{coins} coins</span>
           </div>
         </div>
       </header>

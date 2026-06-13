@@ -4,6 +4,7 @@ import { Award, Clock, Star, User, UserCheck, Users } from "lucide-react";
 import { toast } from "sonner";
 
 import { profileApi, socialApi, formatApiError } from "@/lib/api";
+import UserAvatar from "@/components/UserAvatar";
 
 export default function PublicProfile() {
   const { username } = useParams();
@@ -100,9 +101,7 @@ export default function PublicProfile() {
       </header>
 
       <section style={styles.heroCard}>
-        <div style={styles.avatar}>
-          <User size={46} />
-        </div>
+        <UserAvatar user={profile} size={82} style={styles.avatar} />
 
         <h2 style={styles.displayName}>{profile.display_name || profile.username}</h2>
         <p style={styles.username}>@{profile.username}</p>

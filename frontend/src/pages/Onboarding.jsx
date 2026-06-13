@@ -80,10 +80,30 @@ export default function Onboarding() {
         )
       );
 
+      await api.post("/onboarding/complete");
+
       await syncAppState();
 
       toast.success("Your orbit is ready!");
       setComplete(true);
+    } catch (err) {
+      toast.error(
+        err.response?.data?.detail ||
+          err.message ||
+          "Failed to finish onboarding"
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleSkip() {
+    setSaving(true);
+
+    try {
+      await api.post("/onboarding/complete");
+      await syncAppState();
+      navigate("/");
     } catch (err) {
       toast.error(
         err.response?.data?.detail ||
@@ -223,7 +243,11 @@ export default function Onboarding() {
           )}
 
           <div style={styles.footer}>
-            <button style={styles.skipButton} onClick={() => navigate("/")}>
+            <button
+              style={styles.skipButton}
+              onClick={handleSkip}
+              disabled={saving}
+            >
               Skip for now
             </button>
 

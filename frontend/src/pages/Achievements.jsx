@@ -1,17 +1,28 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 
 export default function Achievements() {
   const [achievements, setAchievements] = useState([]);
+  const [summary, setSummary] = useState({ earned: 0, total: 0, nextUnlock: null });
   const [loading, setLoading] = useState(true);
 
   async function loadAchievements() {
     try {
       const { data } = await api.get("/achievements");
-      setAchievements(
-        Array.isArray(data) ? data : data.items || data.achievements || []
-      );
+      const items = Array.isArray(data)
+        ? data
+        : data.items || data.achievements || [];
+      setAchievements(items);
+      setSummary({
+        earned: Number(
+          Array.isArray(data)
+            ? items.filter((item) => item.unlocked ?? item.earned).length
+            : data.earned_count ?? 0
+        ),
+        total: Number(Array.isArray(data) ? items.length : data.total ?? items.length),
+        nextUnlock: Array.isArray(data) ? null : data.next_unlock || null,
+      });
     } catch (err) {
       toast.error(
         err.response?.data?.detail ||
@@ -26,6 +37,20 @@ export default function Achievements() {
   useEffect(() => {
     loadAchievements();
   }, []);
+
+  const groupedAchievements = useMemo(() => {
+    const order = ["Habits", "Tasks", "Streaks", "Coins", "Rewards", "Quests"];
+    const groups = achievements.reduce((result, achievement) => {
+      const category = achievement.category || "Other";
+      (result[category] ||= []).push(achievement);
+      return result;
+    }, {});
+    return Object.entries(groups).sort(([a], [b]) => {
+      const aIndex = order.indexOf(a);
+      const bIndex = order.indexOf(b);
+      return (aIndex < 0 ? order.length : aIndex) - (bIndex < 0 ? order.length : bIndex);
+    });
+  }, [achievements]);
 
   if (loading) {
     return (
@@ -47,6 +72,26 @@ export default function Achievements() {
         </div>
       </div>
 
+      {achievements.length > 0 && (
+        <div style={styles.summaryCard}>
+          <div style={styles.summaryText}>
+            <strong>
+              {summary.earned}/{summary.total || achievements.length} unlocked
+            </strong>
+            <span>
+              {Math.round(
+                (summary.earned / (summary.total || achievements.length)) * 100
+              )}% complete
+            </span>
+          </div>
+          {summary.nextUnlock && (
+            <span>
+              Next: {summary.nextUnlock.title || summary.nextUnlock.name}
+            </span>
+          )}
+        </div>
+      )}
+
       {achievements.length === 0 ? (
         <div style={styles.emptyCard}>
           <h2>No achievements yet</h2>
@@ -56,8 +101,11 @@ export default function Achievements() {
           </p>
         </div>
       ) : (
-        <div style={styles.grid}>
-          {achievements.map((ach) => {
+        groupedAchievements.map(([category, items]) => (
+          <section key={category} style={styles.section}>
+            <h2 style={styles.sectionTitle}>{category}</h2>
+            <div style={styles.grid}>
+          {items.map((ach) => {
             const id = ach.id || ach._id || ach.achievement_id;
             const unlocked = Boolean(ach.unlocked ?? ach.earned);
             const progress = Number(ach.progress ?? 0);
@@ -83,7 +131,7 @@ export default function Achievements() {
                   </div>
 
                   <div style={styles.badge}>
-                    {unlocked ? "Unlocked" : "Locked"}
+                    {ach.newly_earned ? "New" : unlocked ? "Unlocked" : "Locked"}
                   </div>
                 </div>
 
@@ -113,13 +161,15 @@ export default function Achievements() {
 
                 {unlocked && (
                   <div style={styles.rewardBox}>
-                    +{ach.reward_coins ?? ach.coins ?? 50} coins earned
+                    {ach.rarity ? `${ach.rarity} · ` : ""}+{ach.reward_coins ?? ach.coins ?? 50} coins earned
                   </div>
                 )}
               </div>
             );
           })}
-        </div>
+            </div>
+          </section>
+        ))
       )}
     </div>
   );
@@ -161,6 +211,36 @@ const styles = {
     borderRadius: 28,
     boxShadow: "var(--shadow)",
     textAlign: "center",
+  },
+
+  summaryCard: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 16,
+    marginBottom: 26,
+    padding: "18px 22px",
+    borderRadius: 22,
+    background: "#fff7df",
+    border: "1px solid rgba(242, 184, 75, 0.45)",
+    color: "var(--primary-dark)",
+    flexWrap: "wrap",
+  },
+
+  summaryText: {
+    display: "flex",
+    gap: 10,
+    flexWrap: "wrap",
+  },
+
+  section: {
+    marginBottom: 28,
+  },
+
+  sectionTitle: {
+    margin: "0 0 14px",
+    color: "var(--text)",
+    fontSize: 24,
   },
 
   grid: {

@@ -6,7 +6,7 @@ import { toast } from "sonner";
 
 export default function Tasks() {
   const navigate = useNavigate();
-  const { syncAppState } = useAppState();
+  const { syncAppState, updateCoins, updateLevelData } = useAppState();
 
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -33,15 +33,51 @@ export default function Tasks() {
     setCompletingId(taskId);
 
     try {
-      await api.post(`/tasks/${taskId}/complete`);
+      const { data } = await api.post(`/tasks/${taskId}/complete`);
+
+      if (data.new_balance !== undefined) updateCoins(data.new_balance);
+      if (data.level_data) updateLevelData(data.level_data);
 
       await syncAppState();
       await loadTasks();
 
-      toast.success("Task completed! +coins");
+      toast.success(
+        `Task completed! +${data.coins_earned || 0} coins, +${data.xp_earned || 0} XP`
+      );
+      if (data.new_avatars?.length) {
+        toast.success(
+          `${data.new_avatars.length} avatar${data.new_avatars.length === 1 ? "" : "s"} unlocked`
+        );
+      }
+      if (data.new_achievements?.length) {
+        toast.success(
+          `${data.new_achievements.length} achievement${data.new_achievements.length === 1 ? "" : "s"} unlocked`
+        );
+      }
     } catch (err) {
       toast.error(
         err.response?.data?.detail || err.message || "Failed to complete task"
+      );
+    } finally {
+      setCompletingId(null);
+    }
+  }
+
+  async function uncompleteTask(taskId) {
+    setCompletingId(taskId);
+
+    try {
+      const { data } = await api.post(`/tasks/${taskId}/uncomplete`);
+
+      if (data.new_balance !== undefined) updateCoins(data.new_balance);
+
+      await syncAppState();
+      await loadTasks();
+
+      toast.success("Task reopened");
+    } catch (err) {
+      toast.error(
+        err.response?.data?.detail || err.message || "Failed to reopen task"
       );
     } finally {
       setCompletingId(null);
@@ -144,13 +180,17 @@ export default function Tasks() {
                       ...styles.completeButton,
                       ...(completed ? styles.completedButton : {}),
                     }}
-                    disabled={completed || completingId === taskId}
-                    onClick={() => completeTask(taskId)}
+                    disabled={completingId === taskId}
+                    onClick={() =>
+                      completed
+                        ? uncompleteTask(taskId)
+                        : completeTask(taskId)
+                    }
                   >
-                    {completed
-                      ? "Done"
-                      : completingId === taskId
+                    {completingId === taskId
                       ? "Saving..."
+                      : completed
+                      ? "Reopen"
                       : "Complete"}
                   </button>
 
@@ -319,7 +359,7 @@ const styles = {
   completedButton: {
     background: "#dfeee1",
     color: "var(--primary-dark)",
-    cursor: "not-allowed",
+    cursor: "pointer",
   },
 
   editButton: {

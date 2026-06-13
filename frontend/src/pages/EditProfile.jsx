@@ -3,8 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { Check, Lock, User } from "lucide-react";
 import { toast } from "sonner";
 
-import { profileApi, formatApiError } from "@/lib/api";
+import { profileApi, uploadApi, formatApiError } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import UserAvatar from "@/components/UserAvatar";
 
 export default function EditProfile() {
   const navigate = useNavigate();
@@ -20,6 +21,11 @@ export default function EditProfile() {
   const [avatar, setAvatar] = useState("explorer");
   const [ownedAvatars, setOwnedAvatars] = useState(["explorer"]);
   const [avatarStore, setAvatarStore] = useState([]);
+  const [avatarType, setAvatarType] = useState("preset");
+  const [customAvatarKey, setCustomAvatarKey] = useState(null);
+  const [customAvatarUrl, setCustomAvatarUrl] = useState(null);
+  const [avatarFile, setAvatarFile] = useState(null);
+  const [avatarPreviewUrl, setAvatarPreviewUrl] = useState(null);
 
   async function load() {
     try {
@@ -31,6 +37,9 @@ export default function EditProfile() {
       setAvatar(data?.avatar || "explorer");
       setOwnedAvatars(data?.owned_avatars || ["explorer"]);
       setAvatarStore(data?.avatar_store || []);
+      setAvatarType(data?.avatar_type || "preset");
+      setCustomAvatarKey(data?.custom_avatar_key || null);
+      setCustomAvatarUrl(data?.custom_avatar_url || null);
     } catch (err) {
       toast.error(formatApiError(err.response?.data?.detail) || err.message);
     } finally {
@@ -41,6 +50,10 @@ export default function EditProfile() {
   useEffect(() => {
     load();
   }, []);
+
+  useEffect(() => () => {
+    if (avatarPreviewUrl) URL.revokeObjectURL(avatarPreviewUrl);
+  }, [avatarPreviewUrl]);
 
   async function handleSave() {
     const cleanUsername = username.trim().toLowerCase();
@@ -58,7 +71,7 @@ export default function EditProfile() {
       toast.error("Please enter a display name.");
       return;
     }
-    if (!ownedAvatars.includes(avatar)) {
+    if (avatarType === "preset" && !ownedAvatars.includes(avatar)) {
       toast.error("Choose an unlocked avatar before saving.");
       return;
     }
@@ -70,14 +83,30 @@ export default function EditProfile() {
         display_name: cleanDisplayName,
         bio: bio.trim(),
         is_public: isPublic,
-        avatar,
       });
+      let avatarData;
+      if (avatarType === "custom" && avatarFile) {
+        const extension = avatarFile.name.split(".").pop()?.toLowerCase();
+        const types = { jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", webp: "image/webp", heic: "image/heic" };
+        const contentType = avatarFile.type || types[extension];
+        if (!contentType) throw new Error("Choose a JPEG, PNG, WebP, or HEIC image.");
+        const { data: upload } = await uploadApi.createUploadUrl({ upload_type: "avatar", filename: avatarFile.name, content_type: contentType });
+        const putResponse = await fetch(upload.upload_url, { method: "PUT", headers: upload.headers, body: avatarFile });
+        if (!putResponse.ok) throw new Error("Avatar upload failed. Please try again.");
+        ({ data: avatarData } = await profileApi.updateAvatar({ avatar_type: "custom", custom_avatar_key: upload.key }));
+      } else if (avatarType === "preset") {
+        ({ data: avatarData } = await profileApi.updateAvatar({ avatar_type: "preset", avatar }));
+      } else if (!customAvatarKey) {
+        throw new Error("Choose a custom avatar image before saving.");
+      }
       updateUser?.({
         username: data?.username,
         display_name: data?.display_name,
         bio: data?.bio,
         is_public: data?.is_public,
-        avatar: data?.avatar,
+        avatar: avatarData?.avatar || data?.avatar,
+        avatar_type: avatarData?.avatar_type || data?.avatar_type,
+        custom_avatar_url: avatarData?.custom_avatar_url || data?.custom_avatar_url,
       });
       toast.success("Profile updated");
       navigate("/profile");
@@ -151,17 +180,25 @@ export default function EditProfile() {
             Unlock avatars through achievements, then choose one for your profile.
           </p>
 
+          <div style={styles.customAvatarRow}>
+            <UserAvatar user={{ avatar_type: avatarType, custom_avatar_url: avatarPreviewUrl || customAvatarUrl }} size={72} />
+            <label style={styles.uploadButton}>
+              Upload custom avatar
+              <input type="file" accept="image/jpeg,image/png,image/webp,image/heic,.heic" hidden onChange={(event) => { const file = event.target.files?.[0] || null; setAvatarFile(file); setAvatarPreviewUrl(file ? URL.createObjectURL(file) : null); if (file) setAvatarType("custom"); }} />
+            </label>
+          </div>
+
           <div style={styles.avatarGrid}>
             {avatars.map((item) => {
               const unlocked = ownedAvatars.includes(item.id);
-              const selected = avatar === item.id;
+              const selected = avatarType === "preset" && avatar === item.id;
 
               return (
                 <button
                   key={item.id}
                   type="button"
                   disabled={!unlocked}
-                  onClick={() => setAvatar(item.id)}
+                  onClick={() => { setAvatar(item.id); setAvatarType("preset"); setAvatarFile(null); setAvatarPreviewUrl(null); }}
                   data-testid={`avatar-option-${item.id}`}
                   style={{
                     ...styles.avatarOption,
@@ -270,6 +307,8 @@ const styles = {
     outline: "none",
   },
   helper: { margin: "8px 0 0", color: "var(--muted)", fontWeight: 700, fontSize: 13 },
+  customAvatarRow: { display: "flex", alignItems: "center", gap: 14, marginTop: 14 },
+  uploadButton: { padding: "11px 16px", borderRadius: 14, background: "var(--primary)", color: "white", fontWeight: 850, cursor: "pointer" },
   avatarGrid: {
     marginTop: 14,
     display: "grid",

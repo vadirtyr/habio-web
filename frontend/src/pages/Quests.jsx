@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { api } from "@/lib/api";
 import { useAppState } from "@/context/AppStateContext";
 import { toast } from "sonner";
 
 export default function Quests() {
-  const { syncAppState } = useAppState();
+  const { syncAppState, updateCoins, updateLevelData } = useAppState();
 
   const [quests, setQuests] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -30,18 +30,42 @@ export default function Quests() {
     loadQuests();
   }, []);
 
+  const sortedQuests = useMemo(
+    () =>
+      [...quests].sort((a, b) => {
+        const aReady = Boolean(a.claimable && !a.claimed);
+        const bReady = Boolean(b.claimable && !b.claimed);
+        if (aReady !== bReady) return aReady ? -1 : 1;
+        if (Boolean(a.claimed) !== Boolean(b.claimed)) return a.claimed ? 1 : -1;
+        return Number(b.percent ?? b.progress ?? 0) - Number(a.percent ?? a.progress ?? 0);
+      }),
+    [quests]
+  );
+
+  const completedCount = quests.filter((quest) => quest.completed || quest.claimed).length;
+  const readyCount = quests.filter((quest) => quest.claimable && !quest.claimed).length;
+
   async function claimQuest(questId) {
     setClaimingId(questId);
 
     try {
       const { data } = await api.post(`/quests/${questId}/claim`);
 
+      if (data.new_balance !== undefined) updateCoins(data.new_balance);
+      if (data.level_data) updateLevelData(data.level_data);
+
       await syncAppState();
       await loadQuests();
 
       toast.success(
-        `Quest reward claimed! +${data.coins_earned || 0} coins`
+        `Quest reward claimed! +${data.coins_earned || 0} coins, +${data.xp_earned || 0} XP`
       );
+      if (data.new_avatars?.length) {
+        toast.success(`${data.new_avatars.length} avatar${data.new_avatars.length === 1 ? "" : "s"} unlocked`);
+      }
+      if (data.new_achievements?.length) {
+        toast.success(`${data.new_achievements.length} achievement${data.new_achievements.length === 1 ? "" : "s"} unlocked`);
+      }
     } catch (err) {
       toast.error(
         err.response?.data?.detail || err.message || "Failed to claim quest"
@@ -71,6 +95,13 @@ export default function Quests() {
         </div>
       </div>
 
+      {quests.length > 0 && (
+        <div style={styles.summaryCard}>
+          <strong>{completedCount}/{quests.length} completed</strong>
+          <span>{readyCount > 0 ? `${readyCount} ready to claim` : "Keep building progress"}</span>
+        </div>
+      )}
+
       {quests.length === 0 ? (
         <div style={styles.emptyCard}>
           <h2>No quests yet</h2>
@@ -80,7 +111,7 @@ export default function Quests() {
         </div>
       ) : (
         <div style={styles.grid}>
-          {quests.map((quest) => {
+          {sortedQuests.map((quest) => {
             const questId = quest.id || quest._id;
 
             const progress = Number(quest.progress ?? quest.current ?? 0);
@@ -92,7 +123,7 @@ export default function Quests() {
                 Math.min(100, Math.round((progress / target) * 100))
             );
 
-            const completed = Boolean(quest.completed);
+            const completed = Boolean(quest.completed || quest.claimed);
             const claimed = Boolean(quest.claimed);
             const claimable = Boolean(quest.claimable);
 
@@ -216,6 +247,19 @@ const styles = {
     borderRadius: 28,
     boxShadow: "var(--shadow)",
     textAlign: "center",
+  },
+
+  summaryCard: {
+    display: "flex",
+    justifyContent: "space-between",
+    gap: 16,
+    marginBottom: 20,
+    padding: "16px 20px",
+    borderRadius: 20,
+    background: "#fff7df",
+    border: "1px solid rgba(242, 184, 75, 0.45)",
+    color: "var(--primary-dark)",
+    flexWrap: "wrap",
   },
 
   grid: {

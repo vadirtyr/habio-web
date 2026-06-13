@@ -5,6 +5,7 @@ import {
   CheckCircle2,
   CheckSquare,
   Flag,
+  Flame,
   HandMetal,
   Heart,
   Star,
@@ -13,6 +14,7 @@ import {
 } from "lucide-react";
 
 import { activityApi } from "@/lib/api";
+import UserAvatar from "@/components/UserAvatar";
 
 export function getActivityMeta(item) {
   switch (item?.type) {
@@ -23,6 +25,14 @@ export function getActivityMeta(item) {
         detail:
           (item.streak ? `${item.streak} day streak` : "") +
           (item.coins ? `${item.streak ? " · " : ""}+${item.coins} coins` : ""),
+      };
+    case "streak_milestone":
+      return {
+        Icon: Flame,
+        title: `${item.habit_name || "Habit"} reached a ${
+          item.streak || "?"
+        }-day streak`,
+        detail: item.coins ? `+${item.coins} coins` : "",
       };
     case "task_complete":
       return {
@@ -156,6 +166,7 @@ export default function ActivityTimeline({ items, setItems, showActor = false })
             data-testid="activity-item"
           >
             <div style={styles.row}>
+              {showActor ? <UserAvatar user={item} size={42} /> : null}
               <div style={styles.iconWrap}>
                 <Icon size={20} />
               </div>
