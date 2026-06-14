@@ -70,6 +70,7 @@ import Orbits from "@/pages/Orbits";
 import CreateOrbit from "@/pages/CreateOrbit";
 import OrbitDetail from "@/pages/OrbitDetail";
 import OrbitMembers from "@/pages/OrbitMembers";
+import OrbitInvite from "@/pages/OrbitInvite";
 import CreateOrbitGoal from "@/pages/CreateOrbitGoal";
 
 const TOAST_OPTIONS = {
@@ -130,6 +131,7 @@ function App() {
                   path="/privacy"
                   element={<PrivacyPolicy />}
                 />
+                <Route path="/orbit-invite/:token" element={<OrbitInvite />} />
 
                 <Route
                   path="/delete-account"

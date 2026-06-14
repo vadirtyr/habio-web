@@ -101,6 +101,7 @@ export const statsApi = {
 export const recapApi = {
   list: () => api.get("/weekly-recaps"),
   generate: () => api.post("/weekly-recaps/generate"),
+  generateAI: () => api.post("/weekly-recaps/ai"),
 };
 
 export const uploadApi = {
@@ -119,23 +120,42 @@ export const orbitApi = {
   remove: (orbitId) => api.delete(`/orbits/${orbitId}`),
   listInvites: () => api.get("/orbits/invites/pending"),
   inviteMember: (orbitId, data) => api.post(`/orbits/${orbitId}/invites`, data),
+  createInviteLink: (orbitId, data = {}) => api.post(`/orbits/${orbitId}/invites`, data),
+  listOrbitInvites: (orbitId) => api.get(`/orbits/${orbitId}/invites`),
+  deactivateInvite: (orbitId, inviteId) => api.patch(`/orbits/${orbitId}/invites/${inviteId}/deactivate`),
+  previewInviteLink: (token) => api.get(`/orbit-invites/${encodeURIComponent(token)}`),
+  acceptInviteLink: (token) => api.post(`/orbit-invites/${encodeURIComponent(token)}/accept`),
   acceptInvite: (inviteId) => api.post(`/orbits/invites/${inviteId}/accept`),
   declineInvite: (inviteId) => api.post(`/orbits/invites/${inviteId}/decline`),
   joinByCode: (code) => api.post(`/orbits/join/${encodeURIComponent(code)}`),
   leave: (orbitId) => api.post(`/orbits/${orbitId}/leave`),
   removeMember: (orbitId, userId) => api.delete(`/orbits/${orbitId}/members/${userId}`),
+  updateMemberRole: (orbitId, userId, role) =>
+    api.patch(`/orbits/${orbitId}/members/${userId}/role`, { role }),
+  transferOwnership: (orbitId, userId) =>
+    api.post(`/orbits/${orbitId}/members/${userId}/transfer-ownership`),
   createGoal: (orbitId, data) => api.post(`/orbits/${orbitId}/goals`, data),
   contribute: (orbitId, goalId, data = { amount: 1 }) =>
     api.post(`/orbits/${orbitId}/goals/${goalId}/contribute`, data),
   createHabit: (orbitId, data) => api.post(`/orbits/${orbitId}/habits`, data),
+  updateHabit: (orbitId, habitId, data) => api.patch(`/orbits/${orbitId}/habits/${habitId}`, data),
+  deleteHabit: (orbitId, habitId) => api.delete(`/orbits/${orbitId}/habits/${habitId}`),
   completeHabit: (orbitId, habitId) => api.post(`/orbits/${orbitId}/habits/${habitId}/complete`),
   completeHabitWithProof: (orbitId, habitId, data) => api.post(`/orbits/${orbitId}/habits/${habitId}/complete-with-proof`, data),
   createTask: (orbitId, data) => api.post(`/orbits/${orbitId}/tasks`, data),
+  updateTask: (orbitId, taskId, data) => api.patch(`/orbits/${orbitId}/tasks/${taskId}`, data),
+  deleteTask: (orbitId, taskId) => api.delete(`/orbits/${orbitId}/tasks/${taskId}`),
   completeTask: (orbitId, taskId) => api.post(`/orbits/${orbitId}/tasks/${taskId}/complete`),
   completeTaskWithProof: (orbitId, taskId, data) => api.post(`/orbits/${orbitId}/tasks/${taskId}/complete-with-proof`, data),
   listPendingProofs: (orbitId) => api.get(`/orbits/${orbitId}/proofs/pending`),
+  aiCheckProof: (orbitId, proofId) => api.post(`/orbits/${orbitId}/proofs/${proofId}/ai-check`),
+  listWeeklyRecaps: (orbitId) => api.get(`/orbits/${orbitId}/weekly-recaps`),
+  generateAIWeeklyRecap: (orbitId) => api.post(`/orbits/${orbitId}/weekly-recap/ai`),
   approveProof: (orbitId, proofId) => api.post(`/orbits/${orbitId}/proofs/${proofId}/approve`),
   rejectProof: (orbitId, proofId, data = {}) => api.post(`/orbits/${orbitId}/proofs/${proofId}/reject`, data),
+  createChallenge: (orbitId, data) => api.post(`/orbits/${orbitId}/challenges`, data),
+  updateChallenge: (orbitId, challengeId, data) => api.patch(`/orbits/${orbitId}/challenges/${challengeId}`, data),
+  deleteChallenge: (orbitId, challengeId) => api.delete(`/orbits/${orbitId}/challenges/${challengeId}`),
 };
 
 export default api;

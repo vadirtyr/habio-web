@@ -35,6 +35,7 @@ export default function OrbitDetail() {
   const { orbitId } = useParams();
   const navigate = useNavigate();
   const [dashboard, setDashboard] = useState(null);
+  const [orbitRecaps, setOrbitRecaps] = useState([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(null);
   const [createType, setCreateType] = useState(null);
@@ -50,6 +51,8 @@ export default function OrbitDetail() {
     try {
       const { data } = await orbitApi.getDashboard(orbitId);
       setDashboard(data);
+      const { data: recapData } = await orbitApi.listWeeklyRecaps(orbitId);
+      setOrbitRecaps(Array.isArray(recapData?.items) ? recapData.items : []);
     } catch (err) {
       toast.error(
         formatApiError(err.response?.data?.detail) ||
@@ -72,6 +75,19 @@ export default function OrbitDetail() {
       toast.success("Progress added");
     } catch (err) {
       toast.error(formatApiError(err.response?.data?.detail));
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function generateOrbitAIRecap() {
+    setBusy("orbit-ai-recap");
+    try {
+      await orbitApi.generateAIWeeklyRecap(orbitId);
+      await load();
+      toast.success("Orbit AI recap ready");
+    } catch (err) {
+      toast.error(formatApiError(err.response?.data?.detail) || "AI recap unavailable");
     } finally {
       setBusy(null);
     }
@@ -160,6 +176,19 @@ export default function OrbitDetail() {
     finally { setBusy(null); }
   }
 
+  async function aiCheckProof(proof) {
+    setBusy(`ai-${proof.id}`);
+    try {
+      await orbitApi.aiCheckProof(orbitId, proof.id);
+      await load();
+      toast.success("AI recommendation ready");
+    } catch (err) {
+      toast.error(formatApiError(err.response?.data?.detail || "AI check unavailable"));
+    } finally {
+      setBusy(null);
+    }
+  }
+
   async function leaveOrDelete() {
     const owner = dashboard.orbit.viewer_role === "owner";
     const confirmed = window.confirm(
@@ -215,6 +244,7 @@ export default function OrbitDetail() {
     0,
     Math.min(100, Number(stats.weekly_completion_rate || 0))
   );
+  const canManage = orbit.viewer_role === "owner" || orbit.viewer_role === "admin";
 
   return (
     <div style={s.page}>
@@ -234,12 +264,12 @@ export default function OrbitDetail() {
           >
             Members
           </button>
-          <button
+          {canManage && <button
             style={s.button}
             onClick={() => navigate(`/orbits/${orbitId}/goals/new`)}
           >
             New goal
-          </button>
+          </button>}
         </div>
       </header>
 
@@ -308,8 +338,8 @@ export default function OrbitDetail() {
         <strong style={styles.inviteCode}>{orbit.invite_code}</strong>
       </section>
 
-      <SharedItemSection title="Shared habits" type="habit" items={sharedHabits} busy={busy} onCreate={() => setCreateType("habit")} onComplete={completeSharedItem} />
-      <SharedItemSection title="Shared tasks" type="task" items={sharedTasks} busy={busy} onCreate={() => setCreateType("task")} onComplete={completeSharedItem} />
+      <SharedItemSection title="Shared habits" type="habit" items={sharedHabits} busy={busy} canCreate={canManage} onCreate={() => setCreateType("habit")} onComplete={completeSharedItem} />
+      <SharedItemSection title="Shared tasks" type="task" items={sharedTasks} busy={busy} canCreate={canManage} onCreate={() => setCreateType("task")} onComplete={completeSharedItem} />
 
       {createType && <form style={{...s.card, marginTop:16}} onSubmit={createSharedItem}>
         <h3 style={s.name}>New shared {createType}</h3>
@@ -333,6 +363,13 @@ export default function OrbitDetail() {
         <p style={s.muted}>Submitted by {proof.submitter?.display_name || proof.submitter?.name || "a member"}</p>
         {proof.proof_text && <p style={styles.proofText}>{proof.proof_text}</p>}
         {proof.proof_image_key && <ProofImage objectKey={proof.proof_image_key} />}
+        {proof.ai_status === "completed" && <div style={styles.aiRecommendation}>
+          <strong style={{textTransform:"capitalize"}}>AI recommendation: {proof.ai_recommendation || "uncertain"}</strong>
+          <span>{Math.round((proof.ai_confidence || 0) * 100)}% confidence</span>
+          {proof.ai_reason && <span>{proof.ai_reason}</span>}
+        </div>}
+        {proof.ai_status === "failed" && proof.ai_reason && <p style={styles.aiError}>{proof.ai_reason}</p>}
+        <button type="button" style={{...s.secondaryButton, marginTop:14}} disabled={busy || proof.ai_status === "pending"} onClick={() => aiCheckProof(proof)}>{proof.ai_status === "pending" ? "Checking..." : "AI Check"}</button>
         <input style={{...s.input, marginTop:12}} value={rejectionReason} onChange={e => setRejectionReason(e.target.value)} placeholder="Rejection reason (optional)" maxLength={500}/>
         <div style={{...s.actions, marginTop:14}}><button style={s.secondaryButton} disabled={busy} onClick={() => reviewProof(proof, false)}>Reject</button><button style={s.button} disabled={busy} onClick={() => reviewProof(proof, true)}>Approve</button></div>
       </div>)}</div>}
@@ -385,6 +422,14 @@ export default function OrbitDetail() {
         </div>
       )}
 
+      <h2 style={s.sectionTitle}>Weekly Orbit Recap</h2>
+      <section style={s.card}>
+        {orbitRecaps[0]?.ai_recap ? <OrbitAIRecap recap={orbitRecaps[0].ai_recap} /> : <p style={s.muted}>Generate a shared reflection from this Orbit's completions, challenges, XP, and proof reviews.</p>}
+        <button style={{...s.button, marginTop:14}} disabled={busy} onClick={generateOrbitAIRecap}>
+          {busy === "orbit-ai-recap" ? "Generating..." : orbitRecaps[0]?.ai_recap ? "Refresh AI Recap" : "Generate AI Recap"}
+        </button>
+      </section>
+
       <h2 style={s.sectionTitle}>Recent activity</h2>
       {recentActivity.length ? (
         <div style={s.cardStack}>
@@ -427,9 +472,7 @@ export default function OrbitDetail() {
                       member.user?.username ||
                       "Member"}
                   </h3>
-                  <p style={styles.memberMeta}>
-                    {member.role} · Level {member.user?.level || 1}
-                  </p>
+                  <p style={styles.memberMeta}><span style={{...s.badge, textTransform:"capitalize", marginRight:8}}>{member.role}</span>Level {member.user?.level || 1}</p>
                 </div>
               </div>
             </div>
@@ -465,6 +508,18 @@ function ProgressBar({ percent }) {
   );
 }
 
+function OrbitAIRecap({ recap }) {
+  const sections = [["Wins", recap.wins], ["Needs attention", recap.needs_attention], ["Suggested focus", recap.suggested_focus]];
+  return <div style={styles.orbitAIRecap}>
+    <p style={{margin:0}}>{recap.summary}</p>
+    {sections.map(([label, items]) => items?.length ? <div key={label}>
+      <strong>{label}</strong>
+      <ul>{items.map((item, index) => <li key={index}>{item}</li>)}</ul>
+    </div> : null)}
+    {recap.suggested_challenge && <strong style={{color:"var(--primary-dark)"}}>Challenge idea: {recap.suggested_challenge}</strong>}
+  </div>;
+}
+
 function ProofImage({ objectKey }) {
   const [url, setUrl] = useState(null);
   const [failed, setFailed] = useState(false);
@@ -494,9 +549,9 @@ function StatCard({ Icon, label, value }) {
   );
 }
 
-function SharedItemSection({ title, type, items, busy, onCreate, onComplete }) {
+function SharedItemSection({ title, type, items, busy, canCreate, onCreate, onComplete }) {
   return <>
-    <div style={styles.sectionHeader}><h2 style={{...s.sectionTitle, margin:0}}>{title}</h2><button style={s.secondaryButton} onClick={onCreate}>Create</button></div>
+    <div style={styles.sectionHeader}><h2 style={{...s.sectionTitle, margin:0}}>{title}</h2>{canCreate && <button style={s.secondaryButton} onClick={onCreate}>Create</button>}</div>
     {items.length ? <div style={s.cardStack}>{items.map(item => {
       const completed = type === "habit" ? item.completed_today : item.completed;
       const pending = item.viewer_proof_status === "pending";
@@ -582,6 +637,9 @@ const styles = {
   progressValue: { color: "var(--primary-dark)", fontSize: 18 },
   proofText: { margin:"14px 0 0", padding:14, borderRadius:14, background:"color-mix(in srgb, var(--primary) 8%, var(--surface))", color:"var(--text)", whiteSpace:"pre-wrap" },
   proofImage: { display:"block", width:"100%", maxHeight:420, marginTop:14, borderRadius:16, objectFit:"cover" },
+  aiRecommendation: { display:"grid", gap:5, marginTop:14, padding:14, borderRadius:14, background:"color-mix(in srgb, var(--accent) 10%, var(--surface))", color:"var(--text)" },
+  aiError: { margin:"12px 0 0", color:"var(--danger, #b42318)", fontWeight:700 },
+  orbitAIRecap: { display:"grid", gap:12, color:"var(--text)", lineHeight:1.55 },
   smallLabel: {
     margin: 0,
     color: "var(--muted)",

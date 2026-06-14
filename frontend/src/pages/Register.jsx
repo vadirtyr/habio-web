@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
   Lock,
   Mail,
@@ -14,6 +14,9 @@ import { useAuth } from "@/context/AuthContext";
 export default function Register() {
   const { register } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const returnTo = searchParams.get("returnTo");
+  const destination = returnTo?.startsWith("/") ? returnTo : "/onboarding";
 
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
@@ -36,7 +39,7 @@ export default function Register() {
 
     if (res.ok) {
       toast.success("Welcome to OurOrbit");
-      navigate("/onboarding");
+      navigate(destination);
     } else {
       toast.error(res.error);
     }
@@ -129,13 +132,13 @@ export default function Register() {
             </button>
           </form>
 
-          <GoogleSignInButton redirectTo="/" />
+          <GoogleSignInButton redirectTo={destination} />
 
           <div style={styles.footer}>
             <p style={styles.loginText}>
               Already have an account?{" "}
               <Link
-                to="/login"
+                to={`/login${returnTo ? `?returnTo=${encodeURIComponent(destination)}` : ""}`}
                 style={styles.loginLink}
                 data-testid="go-to-login-link"
               >

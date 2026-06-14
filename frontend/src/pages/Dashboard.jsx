@@ -16,6 +16,7 @@ import { api, notificationApi } from "@/lib/api";
 import { useAppState } from "@/context/AppStateContext";
 import { useAuth } from "@/context/AuthContext";
 import UserAvatar from "@/components/UserAvatar";
+import { getOrbitItems, mergeUnique } from "@/lib/orbitItems";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -32,18 +33,19 @@ export default function Dashboard() {
     try {
       setLoading(true);
 
-      const [habitsRes, tasksRes, rewardsRes] = await Promise.all([
+      const [habitsRes, tasksRes, rewardsRes, orbitItems] = await Promise.all([
         api.get("/habits"),
         api.get("/tasks"),
         api.get("/rewards"),
+        getOrbitItems().catch(() => ({ habits: [], tasks: [] })),
       ]);
 
       const habitsData = habitsRes.data;
       const tasksData = tasksRes.data;
       const rewardsData = rewardsRes.data;
 
-      setHabits(Array.isArray(habitsData) ? habitsData : habitsData.habits || []);
-      setTasks(Array.isArray(tasksData) ? tasksData : tasksData.tasks || []);
+      setHabits(mergeUnique(Array.isArray(habitsData) ? habitsData : habitsData.habits || [], orbitItems.habits, "habit").sort((a, b) => Number(b.is_orbit_item) - Number(a.is_orbit_item)));
+      setTasks(mergeUnique(Array.isArray(tasksData) ? tasksData : tasksData.tasks || [], orbitItems.tasks, "task").sort((a, b) => Number(b.is_orbit_item) - Number(a.is_orbit_item)));
       setRewards(Array.isArray(rewardsData) ? rewardsData : rewardsData.rewards || []);
     } catch (err) {
       toast.error(
@@ -242,9 +244,9 @@ export default function Dashboard() {
         >
           {habits.slice(0, 4).map((habit) => (
             <MiniItem
-              key={habit.id || habit._id}
+              key={habit._list_key || habit.id || habit._id}
               title={habit.name}
-              detail={`${habit.streak || 0} day streak`}
+              detail={habit.is_orbit_item ? `Orbit: ${habit.orbit_name}` : `${habit.streak || 0} day streak`}
               badge={habit.completed_today ? "Done" : "Today"}
             />
           ))}
@@ -265,9 +267,9 @@ export default function Dashboard() {
             .slice(0, 4)
             .map((task) => (
               <MiniItem
-                key={task.id || task._id}
+                key={task._list_key || task.id || task._id}
                 title={task.name || task.title}
-                detail={task.priority || "medium"}
+                detail={task.is_orbit_item ? `Orbit: ${task.orbit_name}` : task.priority || "medium"}
                 badge={task.due_date || "Open"}
               />
             ))}

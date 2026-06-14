@@ -17,6 +17,7 @@ import { recapApi, formatApiError } from "@/lib/api";
 export default function WeeklyRecap() {
   const [recaps, setRecaps] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [generatingAI, setGeneratingAI] = useState(false);
 
   async function loadRecaps() {
     try {
@@ -42,6 +43,19 @@ export default function WeeklyRecap() {
   }, []);
 
   const latest = recaps[0] || null;
+
+  async function generateAIRecap() {
+    setGeneratingAI(true);
+    try {
+      await recapApi.generateAI();
+      await loadRecaps();
+      toast.success("AI recap ready");
+    } catch (err) {
+      toast.error(formatApiError(err.response?.data?.detail) || "AI recap unavailable");
+    } finally {
+      setGeneratingAI(false);
+    }
+  }
 
   return (
     <div style={styles.page} data-testid="weekly-recap-page">
@@ -95,6 +109,14 @@ export default function WeeklyRecap() {
             )}
           </div>
 
+          <section style={styles.aiCard}>
+            <h2 style={styles.cardTitle}>AI Recap</h2>
+            {latest.ai_recap ? <AIRecap recap={latest.ai_recap} /> : <p style={styles.cardCopy}>Turn your weekly metrics into a concise reflection and suggested focus.</p>}
+            <button style={styles.aiButton} disabled={generatingAI} onClick={generateAIRecap}>
+              {generatingAI ? "Generating..." : latest.ai_recap ? "Refresh AI Recap" : "Generate AI Recap"}
+            </button>
+          </section>
+
           {recaps.length > 1 && (
             <section style={styles.history}>
               <h3 style={styles.historyTitle}>Past Recaps</h3>
@@ -129,6 +151,18 @@ function StatTile({ Icon, label, value }) {
   );
 }
 
+function AIRecap({ recap }) {
+  const sections = [["Wins", recap.wins], ["Needs attention", recap.needs_attention], ["Suggested focus", recap.suggested_focus]];
+  return <div style={styles.aiContent}>
+    <p style={styles.aiSummary}>{recap.summary}</p>
+    {sections.map(([label, items]) => items?.length ? <div key={label}>
+      <strong>{label}</strong>
+      <ul>{items.map((item, index) => <li key={index}>{item}</li>)}</ul>
+    </div> : null)}
+    {recap.suggested_challenge && <p style={styles.aiChallenge}>Challenge idea: {recap.suggested_challenge}</p>}
+  </div>;
+}
+
 const styles = {
   page: { width: "100%" },
   header: { marginBottom: 24, maxWidth: 720 },
@@ -156,6 +190,11 @@ const styles = {
     borderRadius: 28,
     boxShadow: "var(--shadow)",
   },
+  aiCard: { marginTop: 18, padding: 24, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 28, boxShadow: "var(--shadow)" },
+  aiContent: { display: "grid", gap: 12, marginTop: 14, color: "var(--text)" },
+  aiSummary: { margin: 0, lineHeight: 1.6 },
+  aiChallenge: { margin: 0, color: "var(--primary-dark)", fontWeight: 800 },
+  aiButton: { marginTop: 18, padding: "12px 18px", border: 0, borderRadius: 14, background: "var(--primary)", color: "white", fontWeight: 800, cursor: "pointer" },
   cardHeader: { display: "flex", alignItems: "center", gap: 14, marginBottom: 22 },
   cardIcon: {
     width: 52,

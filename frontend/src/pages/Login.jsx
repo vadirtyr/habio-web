@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { Mail, Lock } from "lucide-react";
 import { toast } from "sonner";
@@ -9,6 +9,9 @@ import GoogleSignInButton from "@/components/GoogleSignInButton";
 export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const returnTo = searchParams.get("returnTo");
+  const destination = returnTo?.startsWith("/") ? returnTo : "/";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -23,7 +26,7 @@ export default function Login() {
 
     if (res.ok) {
       toast.success("Welcome back!");
-      navigate("/");
+      navigate(destination);
     } else {
       toast.error(res.error);
     }
@@ -93,13 +96,13 @@ export default function Login() {
             </button>
           </form>
 
-          <GoogleSignInButton redirectTo="/" />
+          <GoogleSignInButton redirectTo={destination} />
 
           <div style={styles.footerLinks}>
             <p style={styles.registerText}>
               Don&apos;t have an account?{" "}
               <Link
-                to="/register"
+                to={`/register${returnTo ? `?returnTo=${encodeURIComponent(destination)}` : ""}`}
                 style={styles.registerLink}
                 data-testid="go-to-register-link"
               >

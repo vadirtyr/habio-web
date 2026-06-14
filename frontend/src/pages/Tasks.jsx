@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { api } from "@/lib/api";
 import { useAppState } from "@/context/AppStateContext";
 import { toast } from "sonner";
+import { getOrbitItems, mergeUnique } from "@/lib/orbitItems";
+import { orbitApi } from "@/lib/api";
 
 export default function Tasks() {
   const navigate = useNavigate();
@@ -14,8 +16,11 @@ export default function Tasks() {
 
   async function loadTasks() {
     try {
-      const { data } = await api.get("/tasks");
-      setTasks(Array.isArray(data) ? data : data.tasks || []);
+      const [{ data }, orbitItems] = await Promise.all([
+        api.get("/tasks"),
+        getOrbitItems().catch(() => ({ tasks: [] })),
+      ]);
+      setTasks(mergeUnique(Array.isArray(data) ? data : data.tasks || [], orbitItems.tasks, "task"));
     } catch (err) {
       toast.error(
         err.response?.data?.detail || err.message || "Failed to load tasks"
@@ -30,10 +35,23 @@ export default function Tasks() {
   }, []);
 
   async function completeTask(taskId) {
+    const task = tasks.find((item) => item._list_key === taskId || item.id === taskId);
+    if (!task) return;
+    if (task.is_orbit_item && task.requires_proof) {
+      navigate(`/orbits/${task.orbit_id}`);
+      return;
+    }
     setCompletingId(taskId);
 
     try {
-      const { data } = await api.post(`/tasks/${taskId}/complete`);
+      if (task.is_orbit_item) {
+        await orbitApi.completeTask(task.orbit_id, task.id);
+        await syncAppState();
+        await loadTasks();
+        toast.success(`Completed for ${task.orbit_name}`);
+        return;
+      }
+      const { data } = await api.post(`/tasks/${task.id}/complete`);
 
       if (data.new_balance !== undefined) updateCoins(data.new_balance);
       if (data.level_data) updateLevelData(data.level_data);
@@ -141,7 +159,7 @@ export default function Tasks() {
       ) : (
         <div style={styles.grid}>
           {tasks.map((task) => {
-            const taskId = task.id || task._id;
+            const taskId = task._list_key || task.id || task._id;
             const completed = Boolean(task.completed);
             const taskTitle = task.title || task.name || "Untitled task";
 
@@ -158,6 +176,7 @@ export default function Tasks() {
                     >
                       {taskTitle}
                     </h2>
+                    {task.is_orbit_item && <p style={styles.orbitLabel}>Orbit: {task.orbit_name}</p>}
 
                     <p style={styles.meta}>
                       {task.priority || "medium"} priority
@@ -180,9 +199,9 @@ export default function Tasks() {
                       ...styles.completeButton,
                       ...(completed ? styles.completedButton : {}),
                     }}
-                    disabled={completingId === taskId}
+                    disabled={completingId === taskId || (task.is_orbit_item && completed)}
                     onClick={() =>
-                      completed
+                      completed && !task.is_orbit_item
                         ? uncompleteTask(taskId)
                         : completeTask(taskId)
                     }
@@ -190,23 +209,23 @@ export default function Tasks() {
                     {completingId === taskId
                       ? "Saving..."
                       : completed
-                      ? "Reopen"
+                      ? task.is_orbit_item ? "Done" : "Reopen"
                       : "Complete"}
                   </button>
 
-                  <button
+                  {!task.is_orbit_item && <button
                     style={styles.editButton}
                     onClick={() => navigate(`/tasks/${taskId}/edit`)}
                   >
                     Edit
-                  </button>
+                  </button>}
 
-                  <button
+                  {!task.is_orbit_item && <button
                     style={styles.deleteButton}
                     onClick={() => deleteTask(taskId)}
                   >
                     Delete
-                  </button>
+                  </button>}
                 </div>
               </div>
             );
@@ -318,6 +337,7 @@ const styles = {
     fontWeight: 700,
     fontSize: 14,
   },
+  orbitLabel: { margin: "5px 0 0", color: "var(--primary-dark)", fontWeight: 850, fontSize: 13 },
 
   coinBadge: {
     padding: "7px 11px",

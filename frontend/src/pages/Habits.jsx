@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { api } from "@/lib/api";
 import { useAppState } from "@/context/AppStateContext";
 import { toast } from "sonner";
+import { getOrbitItems, mergeUnique } from "@/lib/orbitItems";
+import { orbitApi } from "@/lib/api";
 
 export default function Habits() {
   const navigate = useNavigate();
@@ -14,8 +16,11 @@ export default function Habits() {
 
   async function loadHabits() {
     try {
-      const { data } = await api.get("/habits");
-      setHabits(Array.isArray(data) ? data : data.habits || []);
+      const [{ data }, orbitItems] = await Promise.all([
+        api.get("/habits"),
+        getOrbitItems().catch(() => ({ habits: [] })),
+      ]);
+      setHabits(mergeUnique(Array.isArray(data) ? data : data.habits || [], orbitItems.habits, "habit"));
     } catch (err) {
       toast.error(
         err.response?.data?.detail || err.message || "Failed to load habits"
@@ -30,15 +35,22 @@ export default function Habits() {
   }, []);
 
   async function completeHabit(habitId) {
+    const habit = habits.find((item) => item._list_key === habitId || item.id === habitId);
+    if (!habit) return;
+    if (habit.is_orbit_item && habit.requires_proof) {
+      navigate(`/orbits/${habit.orbit_id}`);
+      return;
+    }
     setCompletingId(habitId);
 
     try {
-      await api.post(`/habits/${habitId}/complete`);
+      if (habit.is_orbit_item) await orbitApi.completeHabit(habit.orbit_id, habit.id);
+      else await api.post(`/habits/${habit.id}/complete`);
 
       await syncAppState();
       await loadHabits();
 
-      toast.success("Habit completed! +coins");
+      toast.success(habit.is_orbit_item ? `Completed for ${habit.orbit_name}` : "Habit completed! +coins");
     } catch (err) {
       toast.error(
         err.response?.data?.detail || err.message || "Failed to complete habit"
@@ -116,7 +128,7 @@ export default function Habits() {
       ) : (
         <div style={styles.grid}>
           {habits.map((habit) => {
-            const habitId = habit.id || habit._id;
+            const habitId = habit._list_key || habit.id || habit._id;
             const completed = Boolean(habit.completed_today);
 
             return (
@@ -124,6 +136,7 @@ export default function Habits() {
                 <div style={styles.cardTop}>
                   <div>
                     <h2 style={styles.habitName}>{habit.name}</h2>
+                    {habit.is_orbit_item && <p style={styles.orbitLabel}>Orbit: {habit.orbit_name}</p>}
                     <p style={styles.meta}>
                       {habit.category || "Habit"} · {habit.frequency || "daily"}
                     </p>
@@ -162,19 +175,19 @@ export default function Habits() {
                       : "Complete"}
                   </button>
 
-                  <button
+                  {!habit.is_orbit_item && <button
                     style={styles.editButton}
                     onClick={() => navigate(`/habits/${habitId}/edit`)}
                   >
                     Edit
-                  </button>
+                  </button>}
 
-                  <button
+                  {!habit.is_orbit_item && <button
                     style={styles.deleteButton}
                     onClick={() => deleteHabit(habitId)}
                   >
                     Delete
-                  </button>
+                  </button>}
                 </div>
               </div>
             );
@@ -295,6 +308,7 @@ const styles = {
     fontWeight: 700,
     fontSize: 14,
   },
+  orbitLabel: { margin: "5px 0 0", color: "var(--primary-dark)", fontWeight: 850, fontSize: 13 },
 
   coinBadge: {
     padding: "7px 11px",
