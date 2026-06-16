@@ -8,6 +8,7 @@ import {
   Rocket,
   Sparkles,
   Target,
+  Users,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -28,6 +29,7 @@ export default function Dashboard() {
   const [rewards, setRewards] = useState([]);
   const [loading, setLoading] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [orbitSummaries, setOrbitSummaries] = useState([]);
 
   async function loadDashboard() {
     try {
@@ -46,6 +48,7 @@ export default function Dashboard() {
 
       setHabits(mergeUnique(Array.isArray(habitsData) ? habitsData : habitsData.habits || [], orbitItems.habits, "habit").sort((a, b) => Number(b.is_orbit_item) - Number(a.is_orbit_item)));
       setTasks(mergeUnique(Array.isArray(tasksData) ? tasksData : tasksData.tasks || [], orbitItems.tasks, "task").sort((a, b) => Number(b.is_orbit_item) - Number(a.is_orbit_item)));
+      setOrbitSummaries(orbitItems.orbits || []);
       setRewards(Array.isArray(rewardsData) ? rewardsData : rewardsData.rewards || []);
     } catch (err) {
       toast.error(
@@ -209,6 +212,14 @@ export default function Dashboard() {
         </div>
       </section>
 
+      <section style={styles.orbitsSection}>
+        <div style={styles.orbitsHeader}><div><p style={styles.eyebrow}>Together</p><h2 style={styles.orbitsTitle}>Your Orbits</h2></div><button style={styles.smallButton} onClick={() => navigate("/orbits")}>View all</button></div>
+        {orbitSummaries.length ? <>
+          <div style={styles.orbitStrip}>{orbitSummaries.map(orbit => <button key={orbit.id} style={styles.orbitChip} onClick={() => navigate(`/orbits/${orbit.id}`)}><span style={styles.orbitIcon}><Users size={19}/></span><strong>{orbit.name}</strong><span style={styles.orbitMeta}>Level {orbit.level || 1} · {orbit.member_count || 0} members</span></button>)}</div>
+          <div style={styles.featuredOrbitGrid}>{orbitSummaries.slice(0, 3).map(orbit => <button key={`featured-${orbit.id}`} style={styles.featuredOrbitCard} onClick={() => navigate(`/orbits/${orbit.id}`)}><div style={styles.orbitCardHeader}><strong>{orbit.name}</strong><span style={styles.orbitLevel}>Level {orbit.level || 1}</span></div><div style={styles.orbitTrack}><div style={{...styles.orbitFill, width:`${Math.min(100, orbit.weekly_completion_rate || 0)}%`}}/></div><p style={styles.orbitMeta}>{orbit.weekly_completion_rate || 0}% this week · {orbit.active_challenges_count || 0} challenges · {orbit.due_count || 0} due</p></button>)}</div>
+        </> : <div style={styles.noOrbitCard}><Users size={36}/><div><h3 style={styles.noOrbitTitle}>Create your first Orbit</h3><p style={styles.noOrbitText}>Share habits, tasks, challenges, and progress with people who matter.</p></div><div style={styles.orbitActions}><button style={styles.primaryButton} onClick={() => navigate("/orbits/new")}>Create Orbit</button><button style={styles.secondaryButton} onClick={() => navigate("/orbits/new")}>Start from Template</button></div></div>}
+      </section>
+
       <section style={styles.statsGrid}>
         <StatCard
           icon={<CheckCircle2 size={20} />}
@@ -246,7 +257,7 @@ export default function Dashboard() {
             <MiniItem
               key={habit._list_key || habit.id || habit._id}
               title={habit.name}
-              detail={habit.is_orbit_item ? `Orbit: ${habit.orbit_name}` : `${habit.streak || 0} day streak`}
+              detail={habit.is_orbit_item ? habit.orbit_name : "Personal"}
               badge={habit.completed_today ? "Done" : "Today"}
             />
           ))}
@@ -269,7 +280,7 @@ export default function Dashboard() {
               <MiniItem
                 key={task._list_key || task.id || task._id}
                 title={task.name || task.title}
-                detail={task.is_orbit_item ? `Orbit: ${task.orbit_name}` : task.priority || "medium"}
+                detail={task.is_orbit_item ? task.orbit_name : "Personal"}
                 badge={task.due_date || "Open"}
               />
             ))}
@@ -353,6 +364,23 @@ const styles = {
   page: {
     width: "100%",
   },
+  orbitsSection: { marginBottom: 24 },
+  orbitsHeader: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, marginBottom: 14 },
+  orbitsTitle: { margin: 0, color: "var(--text)", fontSize: 28, letterSpacing: "-0.04em" },
+  orbitStrip: { display: "flex", gap: 12, overflowX: "auto", paddingBottom: 10 },
+  orbitChip: { minWidth: 210, padding: 16, display: "grid", gap: 7, textAlign: "left", borderRadius: 20, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text)", cursor: "pointer" },
+  orbitIcon: { width: 38, height: 38, display: "grid", placeItems: "center", borderRadius: 13, color: "var(--primary-dark)", background: "color-mix(in srgb, var(--primary) 12%, var(--surface))" },
+  orbitMeta: { margin: "8px 0 0", color: "var(--muted)", fontWeight: 700, fontSize: 13 },
+  featuredOrbitGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))", gap: 12, marginTop: 4 },
+  featuredOrbitCard: { padding: 18, borderRadius: 22, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text)", textAlign: "left", cursor: "pointer" },
+  orbitCardHeader: { display: "flex", justifyContent: "space-between", gap: 12 },
+  orbitLevel: { color: "var(--primary-dark)", fontWeight: 800 },
+  orbitTrack: { height: 8, marginTop: 16, borderRadius: 999, overflow: "hidden", background: "rgba(127,127,127,0.16)" },
+  orbitFill: { height: "100%", borderRadius: 999, background: "var(--primary)" },
+  noOrbitCard: { padding: 24, display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap", borderRadius: 24, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--primary-dark)" },
+  noOrbitTitle: { margin: 0, color: "var(--text)" },
+  noOrbitText: { margin: "6px 0 0", color: "var(--muted)", fontWeight: 700 },
+  orbitActions: { marginLeft: "auto", display: "flex", gap: 10, flexWrap: "wrap" },
 
   loadingPage: {
     minHeight: "60vh",

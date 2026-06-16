@@ -136,7 +136,7 @@ export default function Habits() {
                 <div style={styles.cardTop}>
                   <div>
                     <h2 style={styles.habitName}>{habit.name}</h2>
-                    {habit.is_orbit_item && <p style={styles.orbitLabel}>Orbit: {habit.orbit_name}</p>}
+                    <p style={styles.orbitLabel}>{habit.is_orbit_item ? habit.orbit_name : "Personal"}</p>
                     <p style={styles.meta}>
                       {habit.category || "Habit"} · {habit.frequency || "daily"}
                     </p>

@@ -1,9 +1,11 @@
 import React, { useCallback, useEffect, useState } from "react";
 import {
   Activity,
+  CalendarDays,
   Flame,
   Orbit,
   Target,
+  Trophy,
   TrendingUp,
   UserCircle,
   Users,
@@ -30,12 +32,19 @@ const PROOF_CONTENT_TYPES = {
   webp: "image/webp",
   heic: "image/heic",
 };
+const RSVP_OPTIONS = [
+  ["attending", "Attending"],
+  ["maybe", "Maybe"],
+  ["declined", "Declined"],
+];
 
 export default function OrbitDetail() {
   const { orbitId } = useParams();
   const navigate = useNavigate();
   const [dashboard, setDashboard] = useState(null);
+  const [events, setEvents] = useState([]);
   const [orbitRecaps, setOrbitRecaps] = useState([]);
+  const [insightsError, setInsightsError] = useState(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(null);
   const [createType, setCreateType] = useState(null);
@@ -46,13 +55,29 @@ export default function OrbitDetail() {
   const [proofText, setProofText] = useState("");
   const [proofFile, setProofFile] = useState(null);
   const [rejectionReason, setRejectionReason] = useState("");
+  const [showRewardForm, setShowRewardForm] = useState(false);
+  const [editingReward, setEditingReward] = useState(null);
+  const [rewardTitle, setRewardTitle] = useState("");
+  const [rewardDescription, setRewardDescription] = useState("");
+  const [rewardCost, setRewardCost] = useState("500");
+  const [showEventForm, setShowEventForm] = useState(false);
+  const [editingEvent, setEditingEvent] = useState(null);
+  const [eventTitle, setEventTitle] = useState("");
+  const [eventDescription, setEventDescription] = useState("");
+  const [eventLocation, setEventLocation] = useState("");
+  const [eventStart, setEventStart] = useState("");
+  const [eventEnd, setEventEnd] = useState("");
 
   const load = useCallback(async () => {
     try {
       const { data } = await orbitApi.getDashboard(orbitId);
       setDashboard(data);
-      const { data: recapData } = await orbitApi.listWeeklyRecaps(orbitId);
+      const [{ data: recapData }, { data: eventData }] = await Promise.all([
+        orbitApi.listWeeklyRecaps(orbitId),
+        orbitApi.listEvents(orbitId),
+      ]);
       setOrbitRecaps(Array.isArray(recapData?.items) ? recapData.items : []);
+      setEvents(Array.isArray(eventData?.items) ? eventData.items : []);
     } catch (err) {
       toast.error(
         formatApiError(err.response?.data?.detail) ||
@@ -88,6 +113,125 @@ export default function OrbitDetail() {
       toast.success("Orbit AI recap ready");
     } catch (err) {
       toast.error(formatApiError(err.response?.data?.detail) || "AI recap unavailable");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function generateOrbitAIInsights() {
+    setBusy("orbit-ai-insights");
+    setInsightsError(null);
+    try {
+      await orbitApi.generateAIInsights(orbitId);
+      await load();
+      toast.success("Orbit Insights ready");
+    } catch (err) {
+      const message = formatApiError(err.response?.data?.detail) || "Orbit Insights unavailable";
+      setInsightsError(message);
+      toast.error(message);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  function openRewardForm(reward = null) {
+    setEditingReward(reward);
+    setRewardTitle(reward?.title || "");
+    setRewardDescription(reward?.description || "");
+    setRewardCost(String(reward?.xp_cost || 500));
+    setShowRewardForm(true);
+  }
+
+  async function saveReward(event) {
+    event.preventDefault();
+    const xpCost = Number(rewardCost);
+    if (!rewardTitle.trim() || xpCost < 1) return;
+    setBusy(editingReward ? `edit-reward-${editingReward.id}` : "create-reward");
+    try {
+      const data = { title: rewardTitle.trim(), description: rewardDescription.trim(), xp_cost: xpCost };
+      if (editingReward) await orbitApi.updateReward(orbitId, editingReward.id, data);
+      else await orbitApi.createReward(orbitId, data);
+      setShowRewardForm(false);
+      setEditingReward(null);
+      await load();
+      toast.success("Orbit reward saved");
+    } catch (err) { toast.error(formatApiError(err.response?.data?.detail) || "Could not save reward"); }
+    finally { setBusy(null); }
+  }
+
+  async function redeemReward(reward) {
+    setBusy(`redeem-reward-${reward.id}`);
+    try {
+      await orbitApi.redeemReward(orbitId, reward.id);
+      await load();
+      toast.success(`${reward.title} redeemed`);
+    } catch (err) { toast.error(formatApiError(err.response?.data?.detail) || "Could not redeem reward"); }
+    finally { setBusy(null); }
+  }
+
+  async function deleteReward(reward) {
+    if (!window.confirm(`Delete ${reward.title}?`)) return;
+    try { await orbitApi.deleteReward(orbitId, reward.id); await load(); toast.success("Orbit reward deleted"); }
+    catch (err) { toast.error(formatApiError(err.response?.data?.detail) || "Could not delete reward"); }
+  }
+
+  function openEventForm(event = null) {
+    setEditingEvent(event);
+    setEventTitle(event?.title || "");
+    setEventDescription(event?.description || "");
+    setEventLocation(event?.location || "");
+    setEventStart(event?.start_time ? event.start_time.slice(0, 16) : "");
+    setEventEnd(event?.end_time ? event.end_time.slice(0, 16) : "");
+    setShowEventForm(true);
+  }
+
+  async function saveEvent(event) {
+    event.preventDefault();
+    if (!eventTitle.trim() || !eventStart.trim()) return;
+    setBusy(editingEvent ? `edit-event-${editingEvent.id}` : "create-event");
+    try {
+      const data = {
+        title: eventTitle.trim(),
+        description: eventDescription.trim(),
+        location: eventLocation.trim(),
+        start_time: eventStart.trim(),
+        end_time: eventEnd.trim() || null,
+      };
+      if (editingEvent) await orbitApi.updateEvent(orbitId, editingEvent.id, data);
+      else await orbitApi.createEvent(orbitId, data);
+      setShowEventForm(false);
+      setEditingEvent(null);
+      await load();
+      toast.success("Orbit event saved");
+    } catch (err) {
+      toast.error(formatApiError(err.response?.data?.detail) || "Could not save event");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function deleteEvent(event) {
+    if (!window.confirm(`Delete ${event.title}?`)) return;
+    setBusy(`delete-event-${event.id}`);
+    try {
+      await orbitApi.deleteEvent(orbitId, event.id);
+      await load();
+      toast.success("Orbit event deleted");
+    } catch (err) {
+      toast.error(formatApiError(err.response?.data?.detail) || "Could not delete event");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function rsvpEvent(event, status) {
+    setBusy(`event-rsvp-${event.id}`);
+    try {
+      await orbitApi.rsvpEvent(orbitId, event.id, status);
+      await load();
+      toast.success("RSVP updated");
+    } catch (err) {
+      toast.error(formatApiError(err.response?.data?.detail) || "Could not update RSVP");
     } finally {
       setBusy(null);
     }
@@ -226,6 +370,15 @@ export default function OrbitDetail() {
     recent_activity: recentActivity = [],
     shared_habits: sharedHabits = [],
     shared_tasks: sharedTasks = [],
+    orbit_achievements: orbitAchievements = [],
+    recent_achievement_unlocks: recentAchievementUnlocks = [],
+    active_rewards: activeRewards = [],
+    redeemed_rewards: redeemedRewards = [],
+    health_score: healthScore = 0,
+    health_trend: healthTrend = "stable",
+    health_change: healthChange = 0,
+    health_breakdown: healthBreakdown = {},
+    health_summary: healthSummary = "",
     pending_proof_count: pendingProofCount = 0,
     pending_proofs: pendingProofs = [],
   } = dashboard;
@@ -297,6 +450,18 @@ export default function OrbitDetail() {
         </p>
       </section>
 
+      <section style={styles.healthCard}>
+        <div style={s.row}>
+          <div><span style={styles.heroLabel}>Orbit Health</span><h2 style={styles.healthScore}>{healthScore}/100</h2></div>
+          <span style={{...styles.healthTrend, color:healthTrend === "up" ? "var(--success)" : healthTrend === "down" ? "var(--danger)" : "var(--text-muted)"}}>{healthTrend === "up" ? "↑" : healthTrend === "down" ? "↓" : "→"} {healthChange > 0 ? "+" : ""}{healthChange}</span>
+        </div>
+        <ProgressBar percent={healthScore} />
+        <p style={s.muted}>{healthSummary}</p>
+        <div style={styles.healthBreakdown}>
+          {[["Completion", "completion", 40], ["Members", "members", 25], ["Challenges", "challenges", 15], ["Streaks", "streaks", 10], ["Activity", "activity", 10]].map(([label, key, max]) => <div key={key} style={styles.healthMetric}><span style={styles.smallLabel}>{label}</span><strong>{healthBreakdown[key] || 0}/{max}</strong></div>)}
+        </div>
+      </section>
+
       <h2 style={s.sectionTitle}>This week</h2>
       <section style={styles.statsGrid}>
         <StatCard
@@ -331,6 +496,46 @@ export default function OrbitDetail() {
         <p style={s.muted}>
           Progress across Shared Orbit goals active this week.
         </p>
+      </section>
+
+      <div style={{...s.row, marginTop:24}}><h2 style={{...s.sectionTitle, margin:0}}>Orbit Events</h2>{canManage && <button style={s.secondaryButton} onClick={() => openEventForm()}>Create event</button>}</div>
+      {showEventForm && <form style={{...s.card, marginTop:16}} onSubmit={saveEvent}>
+        <h3 style={s.name}>{editingEvent ? "Edit Orbit event" : "New Orbit event"}</h3>
+        <label style={s.label}>Title</label><input style={s.input} value={eventTitle} onChange={event => setEventTitle(event.target.value)} maxLength={120}/>
+        <label style={s.label}>Description</label><input style={s.input} value={eventDescription} onChange={event => setEventDescription(event.target.value)} maxLength={1000}/>
+        <label style={s.label}>Location</label><input style={s.input} value={eventLocation} onChange={event => setEventLocation(event.target.value)} maxLength={240}/>
+        <div style={{display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(220px, 1fr))", gap:16}}>
+          <div><label style={s.label}>Start</label><input style={s.input} type="datetime-local" value={eventStart} onChange={event => setEventStart(event.target.value)}/></div>
+          <div><label style={s.label}>End optional</label><input style={s.input} type="datetime-local" value={eventEnd} onChange={event => setEventEnd(event.target.value)}/></div>
+        </div>
+        <div style={s.actions}><button type="button" style={s.secondaryButton} onClick={() => { setShowEventForm(false); setEditingEvent(null); }}>Cancel</button><button style={s.button} disabled={busy || !eventTitle.trim() || !eventStart.trim()}>Save</button></div>
+      </form>}
+      {events.length ? <div style={{...s.cardStack, marginTop:16}}>{events.map(event => <OrbitEventCard key={event.id} event={event} canManage={canManage} busy={busy} onEdit={() => openEventForm(event)} onDelete={() => deleteEvent(event)} onRsvp={(status) => rsvpEvent(event, status)} />)}</div> : <section style={{...s.card, ...s.empty, marginTop:16}}><CalendarDays size={40}/><h3>No Orbit events</h3><p>Add meetings, campouts, workouts, or study sessions for this Orbit.</p></section>}
+
+      <div style={{...s.row, marginTop:24}}><h2 style={{...s.sectionTitle, margin:0}}>Orbit Rewards</h2>{canManage && <button style={s.secondaryButton} onClick={() => openRewardForm()}>Create reward</button>}</div>
+      {showRewardForm && <form style={{...s.card, marginTop:16}} onSubmit={saveReward}>
+        <h3 style={s.name}>{editingReward ? "Edit Orbit reward" : "New Orbit reward"}</h3>
+        <label style={s.label}>Title</label><input style={s.input} value={rewardTitle} onChange={event => setRewardTitle(event.target.value)} maxLength={100}/>
+        <label style={s.label}>Description</label><input style={s.input} value={rewardDescription} onChange={event => setRewardDescription(event.target.value)} maxLength={500}/>
+        <label style={s.label}>XP cost</label><input style={s.input} type="number" min="1" value={rewardCost} onChange={event => setRewardCost(event.target.value)}/>
+        <div style={s.actions}><button type="button" style={s.secondaryButton} onClick={() => { setShowRewardForm(false); setEditingReward(null); }}>Cancel</button><button style={s.button} disabled={busy || !rewardTitle.trim() || Number(rewardCost) < 1}>Save</button></div>
+      </form>}
+      {activeRewards.length ? <div style={{...s.cardStack, marginTop:16}}>{activeRewards.map(reward => <OrbitRewardCard key={reward.id} reward={reward} canManage={canManage} busy={busy} onEdit={() => openRewardForm(reward)} onDelete={() => deleteReward(reward)} onRedeem={() => redeemReward(reward)} />)}</div> : <section style={{...s.card, ...s.empty, marginTop:16}}><h3>No Orbit rewards</h3><p>Create a shared reward worth working toward together.</p></section>}
+      {redeemedRewards.length > 0 && <><p style={{...styles.smallLabel, marginTop:20}}>Redeemed</p><div style={s.cardStack}>{redeemedRewards.slice(0, 3).map(reward => <OrbitRewardCard key={reward.id} reward={reward} canManage={false} busy={null} />)}</div></>}
+
+      <h2 style={s.sectionTitle}>Orbit Achievements</h2>
+      {recentAchievementUnlocks.length > 0 && <section style={{...s.card, marginBottom:16}}>
+        <p style={styles.smallLabel}>Recent unlocks</p>
+        {recentAchievementUnlocks.map(achievement => <div key={achievement.id} style={styles.achievementUnlock}>
+          <Trophy size={24} color={achievement.color || "var(--primary)"} />
+          <div><strong>{achievement.name}</strong><p style={{...s.muted, margin:"4px 0 0"}}>{achievement.description}</p></div>
+        </div>)}
+      </section>}
+      <section style={s.card}>
+        {orbitAchievements.length ? orbitAchievements.map(achievement => <div key={achievement.id} style={styles.achievementRow}>
+          <div style={s.row}><strong>{achievement.earned ? "✓ " : ""}{achievement.name}</strong><span style={s.muted}>{achievement.progress} / {achievement.target}</span></div>
+          <ProgressBar percent={achievement.percent || 0} />
+        </div>) : <p style={s.muted}>Orbit achievement progress will appear as members build momentum.</p>}
       </section>
 
       <section style={{ ...s.card, marginTop: 16 }}>
@@ -430,6 +635,16 @@ export default function OrbitDetail() {
         </button>
       </section>
 
+      <h2 style={s.sectionTitle}>AI Orbit Coach</h2>
+      <section style={s.card}>
+        {orbitRecaps[0]?.ai_insights ? <OrbitAIInsights insights={orbitRecaps[0].ai_insights} /> : <p style={s.muted}>Get practical coaching based on this Orbit's participation, progress, streaks, and challenges.</p>}
+        {orbitRecaps[0]?.ai_insights_generated_at && <p style={styles.progressCaption}>Last generated {new Date(orbitRecaps[0].ai_insights_generated_at).toLocaleString()}</p>}
+        {insightsError && <p style={{color:"var(--danger)", fontWeight:700}}>{insightsError}</p>}
+        <button style={{...s.button, marginTop:14}} disabled={busy} onClick={generateOrbitAIInsights}>
+          {busy === "orbit-ai-insights" ? "Generating..." : orbitRecaps[0]?.ai_insights ? "Refresh Insights" : "Generate Insights"}
+        </button>
+      </section>
+
       <h2 style={s.sectionTitle}>Recent activity</h2>
       {recentActivity.length ? (
         <div style={s.cardStack}>
@@ -520,6 +735,59 @@ function OrbitAIRecap({ recap }) {
   </div>;
 }
 
+function OrbitRewardCard({ reward, canManage, busy, onEdit, onDelete, onRedeem }) {
+  return <section style={s.card}>
+    <div style={s.row}><h3 style={s.name}>{reward.title}</h3><span style={s.badge}>{reward.redeemed ? "redeemed" : `${reward.xp_cost} XP`}</span></div>
+    {reward.description && <p style={s.muted}>{reward.description}</p>}
+    <ProgressBar percent={reward.progress_percent || 0} />
+    <p style={styles.progressCaption}>{reward.progress_xp || 0} / {reward.xp_cost} XP</p>
+    {canManage && !reward.redeemed && <div style={s.actions}>
+      <button style={s.secondaryButton} disabled={busy} onClick={onEdit}>Edit</button>
+      <button style={s.secondaryButton} disabled={busy} onClick={onDelete}>Delete</button>
+      {reward.redeemable && <button style={s.button} disabled={busy} onClick={onRedeem}>Redeem</button>}
+    </div>}
+  </section>;
+}
+
+function OrbitEventCard({ event, canManage, busy, onEdit, onDelete, onRsvp }) {
+  const counts = event.rsvp_counts || {};
+  const start = event.start_time ? new Date(event.start_time).toLocaleString() : "Time TBD";
+  const end = event.end_time ? new Date(event.end_time).toLocaleString() : null;
+  return <section style={s.card}>
+    <div style={s.row}>
+      <div>
+        <h3 style={s.name}>{event.title}</h3>
+        <p style={s.muted}>{start}{end ? ` - ${end}` : ""}</p>
+      </div>
+      <CalendarDays color="var(--primary-dark)" />
+    </div>
+    {event.location && <p style={s.muted}><strong>Location:</strong> {event.location}</p>}
+    {event.description && <p style={s.muted}>{event.description}</p>}
+    <p style={styles.progressCaption}>{counts.attending || 0} attending · {counts.maybe || 0} maybe · {counts.declined || 0} declined</p>
+    <div style={s.actions}>
+      {RSVP_OPTIONS.map(([value, label]) => <button key={value} style={event.viewer_rsvp === value ? s.button : s.secondaryButton} disabled={busy} onClick={() => onRsvp(value)}>{event.viewer_rsvp === value ? `✓ ${label}` : label}</button>)}
+    </div>
+    {canManage && <div style={s.actions}>
+      <button style={s.secondaryButton} disabled={busy} onClick={onEdit}>Edit</button>
+      <button style={s.secondaryButton} disabled={busy} onClick={onDelete}>Delete</button>
+    </div>}
+  </section>;
+}
+
+function OrbitAIInsights({ insights }) {
+  const sections = [["Strengths", insights.strengths], ["Risks", insights.risks], ["Opportunities", insights.opportunities], ["Recommendations", insights.recommendations]];
+  const challenge = insights.suggested_challenge;
+  return <div style={styles.orbitAIRecap}>
+    <p style={{margin:0}}>{insights.summary}</p>
+    {insights.health_explanation && <div><strong>Health explanation</strong><p>{insights.health_explanation}</p></div>}
+    {sections.map(([label, items]) => items?.length ? <div key={label}>
+      <strong>{label}</strong>
+      <ul>{items.map((item, index) => <li key={index}>{item}</li>)}</ul>
+    </div> : null)}
+    {challenge && <div><strong style={{color:"var(--primary-dark)"}}>Suggested challenge: {typeof challenge === "string" ? challenge : challenge.title}</strong>{typeof challenge === "object" && challenge.description && <p>{challenge.description}</p>}</div>}
+  </div>;
+}
+
 function ProofImage({ objectKey }) {
   const [url, setUrl] = useState(null);
   const [failed, setFailed] = useState(false);
@@ -571,6 +839,11 @@ const styles = {
       "linear-gradient(135deg, var(--primary-dark), var(--primary))",
     boxShadow: "0 18px 40px rgba(47, 93, 58, 0.24)",
   },
+  healthCard: { background:"var(--surface)", border:"1px solid var(--border)", borderRadius:18, padding:20, marginTop:16 },
+  healthScore: { margin:"5px 0 12px", fontSize:34, color:"var(--text)" },
+  healthTrend: { fontWeight:850, fontSize:16 },
+  healthBreakdown: { display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(100px, 1fr))", gap:12, marginTop:16 },
+  healthMetric: { display:"grid", gap:4 },
   heroTop: {
     display: "flex",
     alignItems: "center",
@@ -640,6 +913,9 @@ const styles = {
   aiRecommendation: { display:"grid", gap:5, marginTop:14, padding:14, borderRadius:14, background:"color-mix(in srgb, var(--accent) 10%, var(--surface))", color:"var(--text)" },
   aiError: { margin:"12px 0 0", color:"var(--danger, #b42318)", fontWeight:700 },
   orbitAIRecap: { display:"grid", gap:12, color:"var(--text)", lineHeight:1.55 },
+  achievementUnlock: { display:"flex", alignItems:"center", gap:12, marginTop:14 },
+  achievementIcon: { fontSize:24, lineHeight:1 },
+  achievementRow: { display:"grid", gap:8, marginBottom:16 },
   smallLabel: {
     margin: 0,
     color: "var(--muted)",

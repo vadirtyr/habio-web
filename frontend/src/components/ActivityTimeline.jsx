@@ -17,6 +17,9 @@ import { activityApi } from "@/lib/api";
 import UserAvatar from "@/components/UserAvatar";
 
 export function getActivityMeta(item) {
+  if (item?.is_orbit_activity) {
+    return { Icon: Users, title: `${item.message || "Orbit activity"} · ${item.orbit_name}`, detail: "Shared Orbit" };
+  }
   switch (item?.type) {
     case "habit_complete":
       return {
@@ -161,7 +164,7 @@ export default function ActivityTimeline({ items, setItems, showActor = false })
 
         return (
           <div
-            key={item.id || `${item.type}-${index}`}
+            key={item._list_key || item.id || `${item.type}-${index}`}
             style={styles.card}
             data-testid="activity-item"
           >
@@ -189,7 +192,7 @@ export default function ActivityTimeline({ items, setItems, showActor = false })
               </div>
             </div>
 
-            <div style={styles.reactions}>
+            {!item.is_orbit_activity && <div style={styles.reactions}>
               <ReactionButton
                 active={hasReaction(item, "like")}
                 count={item?.reactions?.like || 0}
@@ -209,7 +212,7 @@ export default function ActivityTimeline({ items, setItems, showActor = false })
                 label="Cheer"
                 testId={`react-cheer-${item.id}`}
               />
-            </div>
+            </div>}
           </div>
         );
       })}

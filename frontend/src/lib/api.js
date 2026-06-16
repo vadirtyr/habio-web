@@ -121,6 +121,7 @@ export const orbitApi = {
   listInvites: () => api.get("/orbits/invites/pending"),
   inviteMember: (orbitId, data) => api.post(`/orbits/${orbitId}/invites`, data),
   createInviteLink: (orbitId, data = {}) => api.post(`/orbits/${orbitId}/invites`, data),
+  sendEmailInvites: (orbitId, emails) => api.post(`/orbits/${orbitId}/invites/email`, { emails }),
   listOrbitInvites: (orbitId) => api.get(`/orbits/${orbitId}/invites`),
   deactivateInvite: (orbitId, inviteId) => api.patch(`/orbits/${orbitId}/invites/${inviteId}/deactivate`),
   previewInviteLink: (token) => api.get(`/orbit-invites/${encodeURIComponent(token)}`),
@@ -151,11 +152,23 @@ export const orbitApi = {
   aiCheckProof: (orbitId, proofId) => api.post(`/orbits/${orbitId}/proofs/${proofId}/ai-check`),
   listWeeklyRecaps: (orbitId) => api.get(`/orbits/${orbitId}/weekly-recaps`),
   generateAIWeeklyRecap: (orbitId) => api.post(`/orbits/${orbitId}/weekly-recap/ai`),
+  generateAIInsights: (orbitId) => api.post(`/orbits/${orbitId}/ai-insights`),
   approveProof: (orbitId, proofId) => api.post(`/orbits/${orbitId}/proofs/${proofId}/approve`),
   rejectProof: (orbitId, proofId, data = {}) => api.post(`/orbits/${orbitId}/proofs/${proofId}/reject`, data),
   createChallenge: (orbitId, data) => api.post(`/orbits/${orbitId}/challenges`, data),
   updateChallenge: (orbitId, challengeId, data) => api.patch(`/orbits/${orbitId}/challenges/${challengeId}`, data),
   deleteChallenge: (orbitId, challengeId) => api.delete(`/orbits/${orbitId}/challenges/${challengeId}`),
+  listRewards: (orbitId) => api.get(`/orbits/${orbitId}/rewards`),
+  createReward: (orbitId, data) => api.post(`/orbits/${orbitId}/rewards`, data),
+  updateReward: (orbitId, rewardId, data) => api.patch(`/orbits/${orbitId}/rewards/${rewardId}`, data),
+  redeemReward: (orbitId, rewardId) => api.post(`/orbits/${orbitId}/rewards/${rewardId}/redeem`),
+  deleteReward: (orbitId, rewardId) => api.delete(`/orbits/${orbitId}/rewards/${rewardId}`),
+  listEvents: (orbitId) => api.get(`/orbits/${orbitId}/events`),
+  createEvent: (orbitId, data) => api.post(`/orbits/${orbitId}/events`, data),
+  updateEvent: (orbitId, eventId, data) => api.put(`/orbits/${orbitId}/events/${eventId}`, data),
+  deleteEvent: (orbitId, eventId) => api.delete(`/orbits/${orbitId}/events/${eventId}`),
+  rsvpEvent: (orbitId, eventId, status) =>
+    api.post(`/orbits/${orbitId}/events/${eventId}/rsvp`, { status }),
 };
 
 export default api;

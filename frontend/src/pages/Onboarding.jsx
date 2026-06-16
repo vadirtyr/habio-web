@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { CheckCircle2, Rocket, Sparkles } from "lucide-react";
+import { CheckCircle2, Rocket, Sparkles, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -164,6 +164,11 @@ export default function Onboarding() {
         </p>
       </div>
 
+      <div style={styles.orbitIntro}>
+        <div style={styles.orbitIntroIcon}><Users size={24}/></div>
+        <div><h2 style={styles.orbitIntroTitle}>Create your first Orbit</h2><p style={styles.orbitIntroText}>After setup, invite people to share habits, tasks, challenges, and progress.</p></div>
+      </div>
+
       <div style={styles.layout}>
         <div style={styles.categoryPanel}>
           <h2 style={styles.panelTitle}>Categories</h2>
@@ -275,6 +280,10 @@ const styles = {
   hero: {
     marginBottom: 30,
   },
+  orbitIntro: { marginBottom: 22, padding: 18, display: "flex", alignItems: "center", gap: 14, borderRadius: 22, border: "1px solid var(--border)", background: "var(--surface)" },
+  orbitIntroIcon: { width: 44, height: 44, display: "grid", placeItems: "center", borderRadius: 15, color: "var(--primary-dark)", background: "color-mix(in srgb, var(--primary) 12%, var(--surface))" },
+  orbitIntroTitle: { margin: 0, color: "var(--text)", fontSize: 19 },
+  orbitIntroText: { margin: "5px 0 0", color: "var(--muted)", fontWeight: 700 },
   eyebrow: {
     margin: "0 0 10px",
     color: "var(--primary-dark)",

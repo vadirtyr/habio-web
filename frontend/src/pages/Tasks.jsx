@@ -176,7 +176,7 @@ export default function Tasks() {
                     >
                       {taskTitle}
                     </h2>
-                    {task.is_orbit_item && <p style={styles.orbitLabel}>Orbit: {task.orbit_name}</p>}
+                    <p style={styles.orbitLabel}>{task.is_orbit_item ? task.orbit_name : "Personal"}</p>
 
                     <p style={styles.meta}>
                       {task.priority || "medium"} priority

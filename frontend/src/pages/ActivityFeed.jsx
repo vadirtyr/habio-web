@@ -4,6 +4,7 @@ import { toast } from "sonner";
 
 import { activityApi, formatApiError } from "@/lib/api";
 import ActivityTimeline from "@/components/ActivityTimeline";
+import { getOrbitItems } from "@/lib/orbitItems";
 
 export default function ActivityFeed() {
   const [items, setItems] = useState([]);
@@ -12,8 +13,12 @@ export default function ActivityFeed() {
   async function loadActivity() {
     try {
       setLoading(true);
-      const { data } = await activityApi.getMyActivity();
-      setItems(Array.isArray(data?.items) ? data.items : []);
+      const [{ data }, orbitData] = await Promise.all([
+        activityApi.getMyActivity(),
+        getOrbitItems().catch(() => ({ activity: [] })),
+      ]);
+      const personal = (Array.isArray(data?.items) ? data.items : []).map(item => ({ ...item, _list_key: `personal-activity-${item.id}` }));
+      setItems([...personal, ...(orbitData.activity || [])].sort((a, b) => String(b.created_at || "").localeCompare(String(a.created_at || ""))));
     } catch (err) {
       toast.error(formatApiError(err.response?.data?.detail) || err.message);
     } finally {
