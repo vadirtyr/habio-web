@@ -169,6 +169,18 @@ export const orbitApi = {
   deleteEvent: (orbitId, eventId) => api.delete(`/orbits/${orbitId}/events/${eventId}`),
   rsvpEvent: (orbitId, eventId, status) =>
     api.post(`/orbits/${orbitId}/events/${eventId}/rsvp`, { status }),
+  getEventReadiness: (orbitId, eventId) =>
+    api.get(`/orbits/${orbitId}/events/${eventId}/readiness`),
+  createEventReadinessItem: (orbitId, eventId, data) =>
+    api.post(`/orbits/${orbitId}/events/${eventId}/readiness/items`, data),
+  updateEventReadinessItem: (orbitId, eventId, itemId, data) =>
+    api.put(`/orbits/${orbitId}/events/${eventId}/readiness/items/${itemId}`, data),
+  deleteEventReadinessItem: (orbitId, eventId, itemId) =>
+    api.delete(`/orbits/${orbitId}/events/${eventId}/readiness/items/${itemId}`),
+  completeEventReadinessItem: (orbitId, eventId, itemId) =>
+    api.post(`/orbits/${orbitId}/events/${eventId}/readiness/items/${itemId}/complete`),
+  uncompleteEventReadinessItem: (orbitId, eventId, itemId) =>
+    api.post(`/orbits/${orbitId}/events/${eventId}/readiness/items/${itemId}/uncomplete`),
 };
 
 export default api;

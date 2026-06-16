@@ -43,6 +43,7 @@ export default function OrbitDetail() {
   const navigate = useNavigate();
   const [dashboard, setDashboard] = useState(null);
   const [events, setEvents] = useState([]);
+  const [readinessByEvent, setReadinessByEvent] = useState({});
   const [orbitRecaps, setOrbitRecaps] = useState([]);
   const [insightsError, setInsightsError] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -67,6 +68,10 @@ export default function OrbitDetail() {
   const [eventLocation, setEventLocation] = useState("");
   const [eventStart, setEventStart] = useState("");
   const [eventEnd, setEventEnd] = useState("");
+  const [readinessForm, setReadinessForm] = useState(null);
+  const [readinessTitle, setReadinessTitle] = useState("");
+  const [readinessDescription, setReadinessDescription] = useState("");
+  const [readinessRequired, setReadinessRequired] = useState(true);
 
   const load = useCallback(async () => {
     try {
@@ -77,7 +82,18 @@ export default function OrbitDetail() {
         orbitApi.listEvents(orbitId),
       ]);
       setOrbitRecaps(Array.isArray(recapData?.items) ? recapData.items : []);
-      setEvents(Array.isArray(eventData?.items) ? eventData.items : []);
+      const eventItems = Array.isArray(eventData?.items) ? eventData.items : [];
+      setEvents(eventItems);
+      const readinessResults = await Promise.allSettled(
+        eventItems.map((event) => orbitApi.getEventReadiness(orbitId, event.id))
+      );
+      const readinessMap = {};
+      readinessResults.forEach((result, index) => {
+        if (result.status === "fulfilled") {
+          readinessMap[eventItems[index].id] = result.value.data;
+        }
+      });
+      setReadinessByEvent(readinessMap);
     } catch (err) {
       toast.error(
         formatApiError(err.response?.data?.detail) ||
@@ -232,6 +248,65 @@ export default function OrbitDetail() {
       toast.success("RSVP updated");
     } catch (err) {
       toast.error(formatApiError(err.response?.data?.detail) || "Could not update RSVP");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  function openReadinessForm(event, item = null) {
+    setReadinessForm({ event, item });
+    setReadinessTitle(item?.title || "");
+    setReadinessDescription(item?.description || "");
+    setReadinessRequired(item?.required !== false);
+  }
+
+  async function saveReadinessItem(event) {
+    event.preventDefault();
+    if (!readinessForm?.event || !readinessTitle.trim()) return;
+    const { event: orbitEvent, item } = readinessForm;
+    setBusy(item ? `readiness-edit-${item.id}` : `readiness-create-${orbitEvent.id}`);
+    try {
+      const data = {
+        title: readinessTitle.trim(),
+        description: readinessDescription.trim(),
+        required: readinessRequired,
+      };
+      const response = item
+        ? await orbitApi.updateEventReadinessItem(orbitId, orbitEvent.id, item.id, data)
+        : await orbitApi.createEventReadinessItem(orbitId, orbitEvent.id, data);
+      setReadinessByEvent((current) => ({ ...current, [orbitEvent.id]: response.data }));
+      setReadinessForm(null);
+      toast.success("Readiness checklist updated");
+    } catch (err) {
+      toast.error(formatApiError(err.response?.data?.detail) || "Could not save checklist item");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function deleteReadinessItem(event, item) {
+    if (!window.confirm(`Delete ${item.title}?`)) return;
+    setBusy(`readiness-delete-${item.id}`);
+    try {
+      const response = await orbitApi.deleteEventReadinessItem(orbitId, event.id, item.id);
+      setReadinessByEvent((current) => ({ ...current, [event.id]: response.data }));
+      toast.success("Checklist item deleted");
+    } catch (err) {
+      toast.error(formatApiError(err.response?.data?.detail) || "Could not delete checklist item");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function toggleReadinessItem(event, item) {
+    setBusy(`readiness-${item.id}`);
+    try {
+      const response = item.completed
+        ? await orbitApi.uncompleteEventReadinessItem(orbitId, event.id, item.id)
+        : await orbitApi.completeEventReadinessItem(orbitId, event.id, item.id);
+      setReadinessByEvent((current) => ({ ...current, [event.id]: response.data }));
+    } catch (err) {
+      toast.error(formatApiError(err.response?.data?.detail) || "Could not update checklist");
     } finally {
       setBusy(null);
     }
@@ -510,7 +585,28 @@ export default function OrbitDetail() {
         </div>
         <div style={s.actions}><button type="button" style={s.secondaryButton} onClick={() => { setShowEventForm(false); setEditingEvent(null); }}>Cancel</button><button style={s.button} disabled={busy || !eventTitle.trim() || !eventStart.trim()}>Save</button></div>
       </form>}
-      {events.length ? <div style={{...s.cardStack, marginTop:16}}>{events.map(event => <OrbitEventCard key={event.id} event={event} canManage={canManage} busy={busy} onEdit={() => openEventForm(event)} onDelete={() => deleteEvent(event)} onRsvp={(status) => rsvpEvent(event, status)} />)}</div> : <section style={{...s.card, ...s.empty, marginTop:16}}><CalendarDays size={40}/><h3>No Orbit events</h3><p>Add meetings, campouts, workouts, or study sessions for this Orbit.</p></section>}
+      {events.length ? <div style={{...s.cardStack, marginTop:16}}>{events.map(event => <React.Fragment key={event.id}>
+        <OrbitEventCard
+          event={event}
+          readiness={readinessByEvent[event.id]}
+          canManage={canManage}
+          busy={busy}
+          onEdit={() => openEventForm(event)}
+          onDelete={() => deleteEvent(event)}
+          onRsvp={(status) => rsvpEvent(event, status)}
+          onCreateReadiness={() => openReadinessForm(event)}
+          onEditReadiness={(item) => openReadinessForm(event, item)}
+          onDeleteReadiness={(item) => deleteReadinessItem(event, item)}
+          onToggleReadiness={(item) => toggleReadinessItem(event, item)}
+        />
+        {readinessForm?.event?.id === event.id && <form style={s.card} onSubmit={saveReadinessItem}>
+          <h3 style={s.name}>{readinessForm.item ? "Edit readiness item" : "New readiness item"}</h3>
+          <label style={s.label}>Title</label><input style={s.input} value={readinessTitle} onChange={event => setReadinessTitle(event.target.value)} maxLength={140}/>
+          <label style={s.label}>Description</label><input style={s.input} value={readinessDescription} onChange={event => setReadinessDescription(event.target.value)} maxLength={500}/>
+          <label style={{...s.label, display:"flex", gap:10, alignItems:"center"}}><input type="checkbox" checked={readinessRequired} onChange={event => setReadinessRequired(event.target.checked)}/> Required for readiness percentage</label>
+          <div style={s.actions}><button type="button" style={s.secondaryButton} onClick={() => setReadinessForm(null)}>Cancel</button><button style={s.button} disabled={busy || !readinessTitle.trim()}>Save</button></div>
+        </form>}
+      </React.Fragment>)}</div> : <section style={{...s.card, ...s.empty, marginTop:16}}><CalendarDays size={40}/><h3>No Orbit events</h3><p>Add meetings, campouts, workouts, or study sessions for this Orbit.</p></section>}
 
       <div style={{...s.row, marginTop:24}}><h2 style={{...s.sectionTitle, margin:0}}>Orbit Rewards</h2>{canManage && <button style={s.secondaryButton} onClick={() => openRewardForm()}>Create reward</button>}</div>
       {showRewardForm && <form style={{...s.card, marginTop:16}} onSubmit={saveReward}>
@@ -749,10 +845,23 @@ function OrbitRewardCard({ reward, canManage, busy, onEdit, onDelete, onRedeem }
   </section>;
 }
 
-function OrbitEventCard({ event, canManage, busy, onEdit, onDelete, onRsvp }) {
+function OrbitEventCard({
+  event,
+  readiness,
+  canManage,
+  busy,
+  onEdit,
+  onDelete,
+  onRsvp,
+  onCreateReadiness,
+  onEditReadiness,
+  onDeleteReadiness,
+  onToggleReadiness,
+}) {
   const counts = event.rsvp_counts || {};
   const start = event.start_time ? new Date(event.start_time).toLocaleString() : "Time TBD";
   const end = event.end_time ? new Date(event.end_time).toLocaleString() : null;
+  const items = readiness?.items || [];
   return <section style={s.card}>
     <div style={s.row}>
       <div>
@@ -771,6 +880,20 @@ function OrbitEventCard({ event, canManage, busy, onEdit, onDelete, onRsvp }) {
       <button style={s.secondaryButton} disabled={busy} onClick={onEdit}>Edit</button>
       <button style={s.secondaryButton} disabled={busy} onClick={onDelete}>Delete</button>
     </div>}
+    <div style={{...s.row, marginTop:18}}>
+      <div><h4 style={{...s.name, fontSize:18}}>Readiness checklist</h4><p style={s.muted}>{readiness ? `${readiness.readiness_percent}% ready · ${readiness.completed_count}/${readiness.total_count}` : "Loading readiness..."}</p></div>
+      {canManage && <button style={s.secondaryButton} disabled={busy} onClick={onCreateReadiness}>Add item</button>}
+    </div>
+    {readiness && <ProgressBar percent={readiness.readiness_percent || 0} />}
+    {items.length ? <div style={styles.readinessList}>{items.map(item => <div key={item.id} style={styles.readinessRow}>
+      <button style={styles.checkButton} disabled={busy} onClick={() => onToggleReadiness(item)}>{item.completed ? "☑" : "☐"}</button>
+      <div style={{flex:1}}><strong>{item.title}</strong><p style={s.muted}>{item.required ? "Required" : "Optional"}{item.description ? ` · ${item.description}` : ""}</p></div>
+      {canManage && <div style={s.actions}><button style={s.secondaryButton} disabled={busy} onClick={() => onEditReadiness(item)}>Edit</button><button style={s.secondaryButton} disabled={busy} onClick={() => onDeleteReadiness(item)}>Delete</button></div>}
+    </div>)}</div> : <p style={s.muted}>No readiness items yet.</p>}
+    {canManage && readiness?.member_readiness?.length ? <div style={styles.memberReadiness}>
+      <strong>Member readiness</strong>
+      {readiness.member_readiness.slice(0, 6).map(member => <p key={member.user_id} style={s.muted}>{member.user?.display_name || member.user?.name || member.user?.username || "Member"}: {member.readiness_percent}% ({member.completed_count}/{member.total_count})</p>)}
+    </div> : null}
   </section>;
 }
 
@@ -913,6 +1036,10 @@ const styles = {
   aiRecommendation: { display:"grid", gap:5, marginTop:14, padding:14, borderRadius:14, background:"color-mix(in srgb, var(--accent) 10%, var(--surface))", color:"var(--text)" },
   aiError: { margin:"12px 0 0", color:"var(--danger, #b42318)", fontWeight:700 },
   orbitAIRecap: { display:"grid", gap:12, color:"var(--text)", lineHeight:1.55 },
+  readinessList: { display:"grid", gap:10, marginTop:14 },
+  readinessRow: { display:"flex", alignItems:"flex-start", gap:12, paddingTop:12, borderTop:"1px solid var(--border)" },
+  checkButton: { border:0, background:"transparent", color:"var(--primary-dark)", cursor:"pointer", fontSize:24, lineHeight:1 },
+  memberReadiness: { display:"grid", gap:4, marginTop:14, paddingTop:14, borderTop:"1px solid var(--border)" },
   achievementUnlock: { display:"flex", alignItems:"center", gap:12, marginTop:14 },
   achievementIcon: { fontSize:24, lineHeight:1 },
   achievementRow: { display:"grid", gap:8, marginBottom:16 },
