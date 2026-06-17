@@ -13,6 +13,13 @@ const TEMPLATES = [
     highlights: ["Starter challenges", "Shared rewards", "Family events"],
   },
   {
+    id: "scout_troop",
+    name: "Scout Troop",
+    description: "Meetings, campouts, service projects, leadership, and troop accountability.",
+    nameSuggestion: "Troop 123",
+    highlights: ["Camp readiness", "Service projects", "Troop challenges"],
+  },
+  {
     id: "blank",
     name: "Blank Orbit",
     description: "Start with an empty Orbit and customize everything yourself.",
@@ -27,6 +34,16 @@ export default function CreateOrbit() {
   const [name, setName] = useState(TEMPLATES[0].nameSuggestion);
   const [description, setDescription] = useState("");
   const [saving, setSaving] = useState(false);
+  const isFamily = selected.id === "family";
+  const isScoutTroop = selected.id === "scout_troop";
+  const createLabel = saving
+    ? "Creating..."
+    : isFamily
+      ? "Create Family Orbit"
+      : isScoutTroop
+        ? "Create Scout Troop"
+        : "Create Blank Orbit";
+  const namePlaceholder = isFamily ? "Williams Family" : isScoutTroop ? "Troop 123" : "Morning Momentum";
 
   function chooseTemplate(template) {
     setSelected(template);
@@ -45,7 +62,7 @@ export default function CreateOrbit() {
         description: selected.id === "blank" ? description.trim() : "",
         template: selected.id,
       });
-      toast.success(selected.id === "family" ? "Family Orbit created" : "Blank Orbit created");
+      toast.success(isFamily ? "Family Orbit created" : isScoutTroop ? "Scout Troop created" : "Blank Orbit created");
       navigate(`/orbits/${data.id}`, { replace: true });
     } catch (err) { toast.error(formatApiError(err.response?.data?.detail)); }
     finally { setSaving(false); }
@@ -68,15 +85,19 @@ export default function CreateOrbit() {
       </button>)}
     </div>
 
-    {selected.id === "family" && <div style={{...s.card, marginTop:18}}>
-      <h2 style={s.name}>Family Orbit starter pack</h2>
-      <p style={s.muted}>Creates starter challenges, shared reward ideas, family events, and readiness checklist examples so the Orbit is useful right away.</p>
+    {selected.id !== "blank" && <div style={{...s.card, marginTop:18}}>
+      <h2 style={s.name}>{isScoutTroop ? "Scout Troop starter pack" : "Family Orbit starter pack"}</h2>
+      <p style={s.muted}>
+        {isScoutTroop
+          ? "Creates troop challenges, shared rewards, meeting and campout events, and readiness checklist examples for camp preparation."
+          : "Creates starter challenges, shared reward ideas, family events, and readiness checklist examples so the Orbit is useful right away."}
+      </p>
     </div>}
 
     <form style={{...s.card, ...s.form, marginTop:18}} onSubmit={submit}>
-      <label style={s.label}>Name</label><input style={s.input} maxLength={80} value={name} onChange={e => setName(e.target.value)} placeholder={selected.id === "family" ? "Williams Family" : "Morning Momentum"}/>
+      <label style={s.label}>Name</label><input style={s.input} maxLength={80} value={name} onChange={e => setName(e.target.value)} placeholder={namePlaceholder}/>
       {selected.id === "blank" && <><label style={s.label}>Description</label><textarea style={{...s.input, minHeight:120, resize:"vertical"}} maxLength={500} value={description} onChange={e => setDescription(e.target.value)} placeholder="What will this group work toward?"/></>}
-      <button style={{...s.button, marginTop:22}} disabled={saving || !name.trim()}>{saving ? "Creating..." : selected.id === "family" ? "Create Family Orbit" : "Create Blank Orbit"}</button>
+      <button style={{...s.button, marginTop:22}} disabled={saving || !name.trim()}>{createLabel}</button>
     </form>
   </div>;
 }
