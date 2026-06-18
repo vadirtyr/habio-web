@@ -1,274 +1,449 @@
 import React, { useMemo, useState } from "react";
-import { CheckCircle2, Rocket, Sparkles, Users } from "lucide-react";
+import {
+  CheckCircle2,
+  Circle,
+  Compass,
+  Home,
+  Rocket,
+  School,
+  Tent,
+  Trophy,
+  Users,
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
-import { api } from "@/lib/api";
+import { onboardingApi, orbitApi } from "@/lib/api";
 import { useAppState } from "@/context/AppStateContext";
 
-const HABIT_CATEGORIES = [
+const GOALS = [
+  { id: "family", title: "Family Accountability", template: "family" },
+  { id: "scout", title: "Scout Troop", template: "scout_troop" },
+  { id: "accountability", title: "Accountability Group", template: "accountability_circle" },
+  { id: "fitness", title: "Fitness Goals", template: "fitness_group" },
+  { id: "study", title: "Study Group", template: "study_group" },
+  { id: "personal", title: "Personal Growth", template: "blank" },
+];
+
+const TEMPLATES = [
   {
-    name: "Health",
-    icon: "🌿",
-    habits: ["Drink water", "Take vitamins", "Stretch", "Eat vegetables"],
+    id: "family",
+    title: "Family",
+    icon: Home,
+    placeholder: "Williams Family",
+    description: "Shared goals, chores, rewards, and family accountability.",
   },
   {
-    name: "Fitness",
-    icon: "💪",
-    habits: ["Walk 10 minutes", "Workout", "Do pushups", "Morning mobility"],
+    id: "scout_troop",
+    title: "Scout Troop",
+    icon: Tent,
+    placeholder: "Troop 123",
+    description: "Meetings, campouts, service projects, leadership, and troop accountability.",
   },
   {
-    name: "Productivity",
-    icon: "🎯",
-    habits: ["Plan tomorrow", "Clear inbox", "Deep work", "Review tasks"],
+    id: "accountability_circle",
+    title: "Accountability Circle",
+    icon: Users,
+    placeholder: "Morning Momentum",
+    description: "Weekly check-ins, shared goals, and group accountability.",
   },
   {
-    name: "Mindset",
-    icon: "🧘",
-    habits: ["Journal", "Meditate", "Practice gratitude", "Read affirmations"],
+    id: "fitness_group",
+    title: "Fitness Group",
+    icon: Trophy,
+    placeholder: "Saturday Striders",
+    description: "Workouts, step goals, fitness challenges, and team motivation.",
   },
   {
-    name: "Learning",
-    icon: "📚",
-    habits: ["Read 10 pages", "Study language", "Practice coding", "Watch lesson"],
+    id: "study_group",
+    title: "Study Group",
+    icon: School,
+    placeholder: "Exam Prep Crew",
+    description: "Study sessions, reading goals, exam prep, and group focus.",
   },
+  {
+    id: "blank",
+    title: "Blank Orbit",
+    icon: Compass,
+    placeholder: "My Orbit",
+    description: "Start with an empty Orbit and customize everything yourself.",
+    secondary: true,
+  },
+];
+
+const SUCCESS_ACTIONS = {
+  family: ["Invite family members", "Review starter challenges", "Review starter rewards"],
+  scout_troop: ["Invite leaders", "Create first event", "Review patrols"],
+  accountability_circle: ["Invite members", "Schedule check-in"],
+  fitness_group: ["Invite workout partners", "Review challenges"],
+  study_group: ["Invite study group", "Schedule study session"],
+  blank: ["Invite a member", "Create your first challenge", "Add an event"],
+};
+
+const CHECKLIST = [
+  "Create or Join an Orbit",
+  "Invite a Member",
+  "View a Challenge",
+  "View an Event",
+  "Complete a Task or Habit",
 ];
 
 export default function Onboarding() {
   const navigate = useNavigate();
   const { syncAppState } = useAppState();
 
-  const [selectedCategory, setSelectedCategory] = useState(HABIT_CATEGORIES[0]);
-  const [selectedHabits, setSelectedHabits] = useState([]);
+  const [step, setStep] = useState(0);
+  const [goal, setGoal] = useState(null);
+  const [mode, setMode] = useState(null);
+  const [templateId, setTemplateId] = useState("family");
+  const [orbitName, setOrbitName] = useState("");
+  const [inviteCode, setInviteCode] = useState("");
+  const [orbit, setOrbit] = useState(null);
   const [saving, setSaving] = useState(false);
-  const [complete, setComplete] = useState(false);
+  const [checklist, setChecklist] = useState({
+    create_or_join_orbit: false,
+  });
 
-  const selectedCountText = useMemo(() => {
-    if (selectedHabits.length === 1) return "1 habit selected";
-    return `${selectedHabits.length} habits selected`;
-  }, [selectedHabits.length]);
+  const selectedTemplate = useMemo(
+    () => TEMPLATES.find((template) => template.id === templateId) || TEMPLATES[0],
+    [templateId]
+  );
 
-  function toggleHabit(habitName) {
-    setSelectedHabits((prev) =>
-      prev.includes(habitName)
-        ? prev.filter((item) => item !== habitName)
-        : [...prev, habitName]
-    );
+  const progress = Math.round(((step + 1) / 7) * 100);
+  const suggestedActions = SUCCESS_ACTIONS[templateId] || SUCCESS_ACTIONS.blank;
+
+  async function markStep(data) {
+    try {
+      await onboardingApi.completeStep(data);
+    } catch (_err) {}
   }
 
-  async function handleFinish() {
-    if (selectedHabits.length === 0) {
-      toast.error("Choose at least one habit to get started");
+  function selectGoal(item) {
+    setGoal(item.id);
+    setTemplateId(item.template);
+    markStep({ step: "goal_selected", onboarding_goal: item.id });
+  }
+
+  function selectTemplate(id) {
+    setTemplateId(id);
+    markStep({ step: "template_selected" });
+  }
+
+  async function completeOnboarding() {
+    await onboardingApi.complete();
+    await syncAppState();
+  }
+
+  async function createOrbit() {
+    if (!orbitName.trim()) {
+      toast.error("Give your Orbit a name to continue");
       return;
     }
 
     setSaving(true);
 
     try {
-      await Promise.all(
-        selectedHabits.map((habitName) =>
-          api.post("/habits", {
-            name: habitName,
-            category:
-              HABIT_CATEGORIES.find((cat) => cat.habits.includes(habitName))
-                ?.name || "Habit",
-            frequency: "daily",
-            difficulty: "medium",
-            custom_coins: 10,
-            icon: "sparkles",
-          })
-        )
-      );
+      const response = await orbitApi.create({
+        name: orbitName.trim(),
+        template: templateId,
+      });
+      const created = response.data?.orbit || response.data;
 
-      await api.post("/onboarding/complete");
+      setOrbit(created);
+      setChecklist({ create_or_join_orbit: true });
 
-      await syncAppState();
+      await markStep({
+        step: "success",
+        checklist_item: "create_or_join_orbit",
+      });
+      await completeOnboarding();
 
-      toast.success("Your orbit is ready!");
-      setComplete(true);
+      toast.success("Your Orbit is ready.");
+      setStep(5);
     } catch (err) {
       toast.error(
         err.response?.data?.detail ||
           err.message ||
-          "Failed to finish onboarding"
+          "Failed to create Orbit"
       );
     } finally {
       setSaving(false);
     }
   }
 
-  async function handleSkip() {
+  async function joinOrbit() {
+    if (!inviteCode.trim()) {
+      toast.error("Enter an invite code to continue");
+      return;
+    }
+
     setSaving(true);
 
     try {
-      await api.post("/onboarding/complete");
-      await syncAppState();
-      navigate("/");
+      const response = await orbitApi.joinByCode(inviteCode.trim());
+      const joined = response.data?.orbit || {
+        id: response.data?.orbit_id,
+        name: "Your Orbit",
+      };
+
+      setOrbit(joined);
+      setChecklist({ create_or_join_orbit: true });
+
+      await markStep({
+        step: "success",
+        checklist_item: "create_or_join_orbit",
+      });
+      await completeOnboarding();
+
+      toast.success("You joined the Orbit.");
+      setStep(5);
     } catch (err) {
       toast.error(
         err.response?.data?.detail ||
           err.message ||
-          "Failed to finish onboarding"
+          "Failed to join Orbit"
       );
     } finally {
       setSaving(false);
     }
   }
 
-  if (complete) {
+  function goToOrbit() {
+    if (orbit?.id) {
+      navigate(`/orbits/${orbit.id}`);
+      return;
+    }
+
+    navigate("/");
+  }
+
+  function renderOption({ active, title, description, Icon = Circle, onClick, secondary }) {
     return (
-      <div style={styles.completePage}>
-        <div style={styles.completeCard}>
-          <div style={styles.completeIcon}>
-            <Rocket size={42} />
-          </div>
-
-          <p style={styles.eyebrow}>Setup complete</p>
-
-          <h1 style={styles.completeTitle}>Your orbit is ready</h1>
-
-          <p style={styles.completeSubtitle}>
-            You created {selectedHabits.length} starter{" "}
-            {selectedHabits.length === 1 ? "habit" : "habits"}. Start small,
-            keep showing up, and let the streaks do their work.
-          </p>
-
-          <div style={styles.selectedSummary}>
-            {selectedHabits.map((habit) => (
-              <span key={habit} style={styles.summaryPill}>
-                <CheckCircle2 size={15} />
-                {habit}
-              </span>
-            ))}
-          </div>
-
-          <button
-            style={styles.finishButton}
-            onClick={() => navigate("/")}
-          >
-            Go to Dashboard
-          </button>
-        </div>
-      </div>
+      <button
+        key={title}
+        type="button"
+        style={{
+          ...styles.option,
+          ...(active ? styles.optionActive : {}),
+          ...(secondary ? styles.optionSecondary : {}),
+        }}
+        onClick={onClick}
+      >
+        <span style={styles.optionIcon}>
+          <Icon size={22} />
+        </span>
+        <span style={styles.optionCopy}>
+          <strong>{title}</strong>
+          {description && <span>{description}</span>}
+        </span>
+        {active && <CheckCircle2 size={22} />}
+      </button>
     );
   }
 
   return (
     <div style={styles.page}>
-      <div style={styles.hero}>
+      <section style={styles.hero}>
         <p style={styles.eyebrow}>Welcome to OurOrbit</p>
-        <h1 style={styles.title}>Let’s build your first habits</h1>
+        <h1 style={styles.title}>Build better habits together</h1>
         <p style={styles.subtitle}>
-          Pick a category, choose a few starter habits, and OurOrbit will create
-          them for you.
+          Shared goals, real accountability, and a quick path into your first Orbit.
         </p>
-      </div>
-
-      <div style={styles.orbitIntro}>
-        <div style={styles.orbitIntroIcon}><Users size={24}/></div>
-        <div><h2 style={styles.orbitIntroTitle}>Create your first Orbit</h2><p style={styles.orbitIntroText}>After setup, invite people to share habits, tasks, challenges, and progress.</p></div>
-      </div>
-
-      <div style={styles.layout}>
-        <div style={styles.categoryPanel}>
-          <h2 style={styles.panelTitle}>Categories</h2>
-
-          <div style={styles.categoryList}>
-            {HABIT_CATEGORIES.map((category) => {
-              const active = selectedCategory.name === category.name;
-
-              return (
-                <button
-                  key={category.name}
-                  style={{
-                    ...styles.categoryButton,
-                    ...(active ? styles.categoryButtonActive : {}),
-                  }}
-                  onClick={() => setSelectedCategory(category)}
-                >
-                  <span style={styles.categoryIcon}>{category.icon}</span>
-                  {category.name}
-                </button>
-              );
-            })}
-          </div>
+        <div style={styles.progressTrack}>
+          <div style={{ ...styles.progressFill, width: `${progress}%` }} />
         </div>
+      </section>
 
-        <div style={styles.habitPanel}>
-          <div style={styles.panelHeader}>
-            <div>
-              <h2 style={styles.panelTitle}>
-                {selectedCategory.icon} {selectedCategory.name}
-              </h2>
-              <p style={styles.panelSubtitle}>Choose habits to add.</p>
+      <section style={styles.card}>
+        {step === 0 && (
+          <>
+            <div style={styles.iconBubble}>
+              <Rocket size={32} />
             </div>
-
-            <div style={styles.countBadge}>{selectedCountText}</div>
-          </div>
-
-          <div style={styles.habitGrid}>
-            {selectedCategory.habits.map((habit) => {
-              const selected = selectedHabits.includes(habit);
-
-              return (
-                <button
-                  key={habit}
-                  style={{
-                    ...styles.habitButton,
-                    ...(selected ? styles.habitButtonSelected : {}),
-                  }}
-                  onClick={() => toggleHabit(habit)}
-                >
-                  <span>{habit}</span>
-                  {selected && <CheckCircle2 size={20} />}
-                </button>
-              );
-            })}
-          </div>
-
-          {selectedHabits.length > 0 && (
-            <div style={styles.selectedBox}>
-              <div style={styles.selectedBoxTitle}>
-                <Sparkles size={17} />
-                Selected starter habits
-              </div>
-
-              <div style={styles.selectedPills}>
-                {selectedHabits.map((habit) => (
-                  <button
-                    key={habit}
-                    style={styles.selectedPill}
-                    onClick={() => toggleHabit(habit)}
-                  >
-                    {habit} ×
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div style={styles.footer}>
+            <h2 style={styles.cardTitle}>Welcome to OurOrbit</h2>
+            <p style={styles.cardText}>
+              Build better habits together through shared goals and accountability.
+            </p>
             <button
-              style={styles.skipButton}
-              onClick={handleSkip}
-              disabled={saving}
-            >
-              Skip for now
-            </button>
-
-            <button
-              style={{
-                ...styles.finishButton,
-                ...(saving ? styles.buttonDisabled : {}),
+              style={styles.primaryButton}
+              onClick={() => {
+                markStep({ step: "welcome" });
+                setStep(1);
               }}
-              onClick={handleFinish}
-              disabled={saving}
             >
-              {saving ? "Creating..." : "Finish Setup"}
+              Get Started
             </button>
-          </div>
-        </div>
-      </div>
+          </>
+        )}
+
+        {step === 1 && (
+          <>
+            <h2 style={styles.cardTitle}>What brings you here?</h2>
+            <div style={styles.optionGrid}>
+              {GOALS.map((item) =>
+                renderOption({
+                  active: goal === item.id,
+                  title: item.title,
+                  Icon: Users,
+                  onClick: () => selectGoal(item),
+                })
+              )}
+            </div>
+            <button
+              style={{ ...styles.primaryButton, ...(goal ? {} : styles.disabled) }}
+              disabled={!goal}
+              onClick={() => setStep(2)}
+            >
+              Continue
+            </button>
+          </>
+        )}
+
+        {step === 2 && (
+          <>
+            <h2 style={styles.cardTitle}>How would you like to get started?</h2>
+            <div style={styles.optionGrid}>
+              {renderOption({
+                active: mode === "join",
+                title: "Join an Existing Orbit",
+                description: "Use an invite code from your group.",
+                Icon: Users,
+                onClick: () => setMode("join"),
+              })}
+              {renderOption({
+                active: mode === "create",
+                title: "Create a New Orbit",
+                description: "Choose a template and invite people after setup.",
+                Icon: Rocket,
+                onClick: () => setMode("create"),
+              })}
+            </div>
+            <button
+              style={{ ...styles.primaryButton, ...(mode ? {} : styles.disabled) }}
+              disabled={!mode}
+              onClick={() => {
+                markStep({ step: "join_or_create_selected" });
+                setStep(mode === "join" ? 5 : 3);
+              }}
+            >
+              Continue
+            </button>
+          </>
+        )}
+
+        {step === 3 && (
+          <>
+            <h2 style={styles.cardTitle}>Choose Template</h2>
+            <p style={styles.cardText}>
+              Templates include starter challenges, rewards, events, and readiness checklists.
+            </p>
+            <div style={styles.optionGrid}>
+              {TEMPLATES.map((template) =>
+                renderOption({
+                  active: templateId === template.id,
+                  title: template.title,
+                  description: template.description,
+                  Icon: template.icon,
+                  secondary: template.secondary,
+                  onClick: () => selectTemplate(template.id),
+                })
+              )}
+            </div>
+            <button style={styles.primaryButton} onClick={() => setStep(4)}>
+              Continue
+            </button>
+          </>
+        )}
+
+        {step === 4 && (
+          <>
+            <h2 style={styles.cardTitle}>
+              {templateId === "scout_troop" ? "Troop Name" : "Orbit Name"}
+            </h2>
+            <p style={styles.cardText}>Starter content will be added automatically.</p>
+            <input
+              style={styles.input}
+              value={orbitName}
+              onChange={(event) => setOrbitName(event.target.value)}
+              placeholder={selectedTemplate.placeholder}
+            />
+            <button
+              style={{ ...styles.primaryButton, ...(saving ? styles.disabled : {}) }}
+              disabled={saving}
+              onClick={createOrbit}
+            >
+              {saving ? "Creating..." : "Create Orbit"}
+            </button>
+          </>
+        )}
+
+        {step === 5 && mode === "join" && !orbit && (
+          <>
+            <h2 style={styles.cardTitle}>Enter Invite Code</h2>
+            <p style={styles.cardText}>Paste the invite code from your existing Orbit.</p>
+            <input
+              style={styles.input}
+              value={inviteCode}
+              onChange={(event) => setInviteCode(event.target.value)}
+              placeholder="Invite code"
+            />
+            <button
+              style={{ ...styles.primaryButton, ...(saving ? styles.disabled : {}) }}
+              disabled={saving}
+              onClick={joinOrbit}
+            >
+              {saving ? "Joining..." : "Join Orbit"}
+            </button>
+          </>
+        )}
+
+        {step === 5 && orbit && (
+          <>
+            <div style={styles.iconBubble}>
+              <CheckCircle2 size={32} />
+            </div>
+            <h2 style={styles.cardTitle}>Your Orbit is ready.</h2>
+            <p style={styles.cardText}>Here are the best next actions to build momentum.</p>
+            <div style={styles.list}>
+              {suggestedActions.map((action) => (
+                <div key={action} style={styles.listRow}>
+                  <CheckCircle2 size={18} />
+                  <span>{action}</span>
+                </div>
+              ))}
+            </div>
+            <button style={styles.primaryButton} onClick={() => setStep(6)}>
+              View Getting Started Checklist
+            </button>
+          </>
+        )}
+
+        {step === 6 && (
+          <>
+            <h2 style={styles.cardTitle}>Getting Started Checklist</h2>
+            <p style={styles.cardText}>
+              Starter Badge unlocked. Keep going with these first meaningful actions.
+            </p>
+            <div style={styles.list}>
+              {CHECKLIST.map((item, index) => {
+                const done = index === 0 && checklist.create_or_join_orbit;
+                return (
+                  <div key={item} style={styles.listRow}>
+                    {done ? <CheckCircle2 size={18} /> : <Circle size={18} />}
+                    <span>{item}</span>
+                  </div>
+                );
+              })}
+            </div>
+            <button style={styles.primaryButton} onClick={goToOrbit}>
+              Go to My Orbit
+            </button>
+            <button style={styles.secondaryButton} onClick={() => navigate("/")}>
+              Go to Dashboard
+            </button>
+          </>
+        )}
+      </section>
     </div>
   );
 }
@@ -276,259 +451,164 @@ export default function Onboarding() {
 const styles = {
   page: {
     width: "100%",
+    maxWidth: 980,
+    margin: "0 auto",
+    padding: "28px 18px 56px",
   },
   hero: {
-    marginBottom: 30,
+    marginBottom: 22,
   },
-  orbitIntro: { marginBottom: 22, padding: 18, display: "flex", alignItems: "center", gap: 14, borderRadius: 22, border: "1px solid var(--border)", background: "var(--surface)" },
-  orbitIntroIcon: { width: 44, height: 44, display: "grid", placeItems: "center", borderRadius: 15, color: "var(--primary-dark)", background: "color-mix(in srgb, var(--primary) 12%, var(--surface))" },
-  orbitIntroTitle: { margin: 0, color: "var(--text)", fontSize: 19 },
-  orbitIntroText: { margin: "5px 0 0", color: "var(--muted)", fontWeight: 700 },
   eyebrow: {
-    margin: "0 0 10px",
-    color: "var(--primary-dark)",
+    margin: 0,
+    color: "#5B6BFF",
+    fontSize: 13,
     fontWeight: 900,
+    letterSpacing: 1,
     textTransform: "uppercase",
-    letterSpacing: "0.12em",
-    fontSize: 12,
   },
   title: {
-    margin: 0,
-    fontSize: 48,
+    margin: "8px 0",
+    fontSize: "clamp(34px, 7vw, 58px)",
     lineHeight: 1,
-    letterSpacing: "-0.06em",
-    color: "var(--text)",
-    maxWidth: 720,
+    color: "#1E1E24",
   },
   subtitle: {
-    margin: "14px 0 0",
-    color: "var(--muted)",
-    fontWeight: 600,
-    fontSize: 17,
-    lineHeight: 1.6,
-    maxWidth: 760,
+    maxWidth: 620,
+    color: "#666A73",
+    fontSize: 18,
+    lineHeight: 1.5,
   },
-  layout: {
+  progressTrack: {
+    height: 10,
+    maxWidth: 520,
+    overflow: "hidden",
+    border: "2px solid #1E1E24",
+    borderRadius: 999,
+    background: "#FFFFFF",
+    boxShadow: "3px 3px 0 #1E1E24",
+  },
+  progressFill: {
+    height: "100%",
+    background: "linear-gradient(90deg, #5B6BFF, #2FD0C7)",
+    transition: "width 180ms ease",
+  },
+  card: {
     display: "grid",
-    gridTemplateColumns: "280px 1fr",
-    gap: 22,
-    alignItems: "start",
-  },
-  categoryPanel: {
-    padding: 22,
-    background: "var(--surface)",
-    border: "1px solid var(--border)",
-    borderRadius: 30,
-    boxShadow: "var(--shadow)",
-    position: "sticky",
-    top: 24,
-  },
-  habitPanel: {
+    gap: 18,
     padding: 24,
-    background: "var(--surface)",
-    border: "1px solid var(--border)",
-    borderRadius: 30,
-    boxShadow: "var(--shadow)",
-  },
-  panelHeader: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    gap: 12,
-    marginBottom: 22,
-    flexWrap: "wrap",
-  },
-  panelTitle: {
-    margin: 0,
-    fontSize: 28,
-    letterSpacing: "-0.04em",
-    color: "var(--text)",
-  },
-  panelSubtitle: {
-    margin: "7px 0 0",
-    color: "var(--muted)",
-    fontWeight: 700,
-    fontSize: 14,
-  },
-  categoryList: {
-    display: "flex",
-    flexDirection: "column",
-    gap: 10,
-    marginTop: 18,
-  },
-  categoryButton: {
-    padding: "14px 16px",
-    border: "1px solid transparent",
-    borderRadius: 18,
-    background: "rgba(255,255,255,0.55)",
-    color: "var(--text)",
-    fontWeight: 800,
-    cursor: "pointer",
-    textAlign: "left",
-    transition: "all 0.15s ease",
-    display: "flex",
-    alignItems: "center",
-    gap: 10,
-  },
-  categoryButtonActive: {
-    background: "#eef6ef",
-    border: "1px solid rgba(79, 143, 91, 0.18)",
-    color: "var(--primary-dark)",
-  },
-  categoryIcon: {
-    fontSize: 20,
-  },
-  countBadge: {
-    padding: "8px 13px",
-    borderRadius: 999,
-    background: "#fff7df",
-    color: "var(--primary-dark)",
-    border: "1px solid rgba(242, 184, 75, 0.45)",
-    fontWeight: 900,
-    whiteSpace: "nowrap",
-    fontSize: 13,
-  },
-  habitGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
-    gap: 14,
-  },
-  habitButton: {
-    padding: 18,
-    minHeight: 88,
-    border: "1px solid rgba(79, 143, 91, 0.08)",
-    borderRadius: 22,
-    background: "rgba(255,255,255,0.55)",
-    color: "var(--text)",
-    fontWeight: 800,
-    cursor: "pointer",
-    textAlign: "left",
-    lineHeight: 1.4,
-    transition: "all 0.15s ease",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 12,
-  },
-  habitButtonSelected: {
-    background: "#eef6ef",
-    border: "1px solid rgba(79, 143, 91, 0.24)",
-    color: "var(--primary-dark)",
-    boxShadow: "0 8px 22px rgba(79, 143, 91, 0.12)",
-  },
-  selectedBox: {
-    marginTop: 24,
-    padding: 18,
+    border: "2px solid #1E1E24",
     borderRadius: 24,
-    background: "#fff7df",
-    border: "1px solid rgba(242, 184, 75, 0.45)",
+    background: "#FFFFFF",
+    boxShadow: "6px 6px 0 #1E1E24",
   },
-  selectedBoxTitle: {
+  iconBubble: {
+    width: 62,
+    height: 62,
+    display: "grid",
+    placeItems: "center",
+    border: "2px solid #1E1E24",
+    borderRadius: 18,
+    color: "#1E1E24",
+    background: "#EAF8FF",
+  },
+  cardTitle: {
+    margin: 0,
+    color: "#1E1E24",
+    fontSize: 30,
+    lineHeight: 1.1,
+  },
+  cardText: {
+    margin: 0,
+    color: "#666A73",
+    fontSize: 16,
+    lineHeight: 1.5,
+  },
+  optionGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+    gap: 12,
+  },
+  option: {
     display: "flex",
     alignItems: "center",
-    gap: 8,
-    color: "var(--primary-dark)",
-    fontWeight: 900,
-    marginBottom: 12,
-  },
-  selectedPills: {
-    display: "flex",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  selectedPill: {
-    border: "1px solid rgba(79, 143, 91, 0.18)",
-    borderRadius: 999,
-    background: "white",
-    color: "var(--primary-dark)",
-    padding: "8px 11px",
-    fontWeight: 900,
-    cursor: "pointer",
-  },
-  footer: {
-    display: "flex",
-    justifyContent: "flex-end",
     gap: 12,
-    marginTop: 28,
-    flexWrap: "wrap",
+    minHeight: 86,
+    padding: 16,
+    border: "2px solid #D7DAE5",
+    borderRadius: 18,
+    background: "#FFFFFF",
+    color: "#1E1E24",
+    cursor: "pointer",
+    textAlign: "left",
   },
-  skipButton: {
-    padding: "13px 18px",
-    border: "1px solid var(--border)",
+  optionActive: {
+    borderColor: "#1E1E24",
+    background: "#F2F5FF",
+    boxShadow: "4px 4px 0 #1E1E24",
+  },
+  optionSecondary: {
+    opacity: 0.86,
+  },
+  optionIcon: {
+    width: 42,
+    height: 42,
+    display: "grid",
+    placeItems: "center",
+    flex: "0 0 auto",
+    borderRadius: 14,
+    background: "#EEF2FF",
+  },
+  optionCopy: {
+    display: "grid",
+    gap: 4,
+    flex: 1,
+  },
+  input: {
+    width: "100%",
+    minHeight: 54,
+    padding: "0 16px",
+    border: "2px solid #1E1E24",
+    borderRadius: 16,
+    fontSize: 16,
+    fontWeight: 700,
+    boxSizing: "border-box",
+  },
+  primaryButton: {
+    minHeight: 52,
+    padding: "0 22px",
+    border: "2px solid #1E1E24",
     borderRadius: 999,
-    background: "var(--surface)",
-    color: "var(--text)",
+    background: "#5B6BFF",
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: 900,
+    cursor: "pointer",
+    boxShadow: "4px 4px 0 #1E1E24",
+  },
+  secondaryButton: {
+    minHeight: 48,
+    padding: "0 22px",
+    border: "2px solid #D7DAE5",
+    borderRadius: 999,
+    background: "#FFFFFF",
+    color: "#1E1E24",
+    fontSize: 15,
     fontWeight: 900,
     cursor: "pointer",
   },
-  finishButton: {
-    padding: "13px 22px",
-    border: "none",
-    borderRadius: 999,
-    background: "var(--primary)",
-    color: "white",
-    fontWeight: 900,
-    cursor: "pointer",
-    boxShadow: "0 8px 22px rgba(79, 143, 91, 0.24)",
-  },
-  buttonDisabled: {
-    opacity: 0.65,
+  disabled: {
+    opacity: 0.55,
     cursor: "not-allowed",
   },
-  completePage: {
-    minHeight: "70vh",
+  list: {
     display: "grid",
-    placeItems: "center",
+    gap: 10,
   },
-  completeCard: {
-    width: "100%",
-    maxWidth: 640,
-    textAlign: "center",
-    padding: 34,
-    borderRadius: 34,
-    background: "var(--surface)",
-    border: "1px solid var(--border)",
-    boxShadow: "var(--shadow)",
-  },
-  completeIcon: {
-    width: 82,
-    height: 82,
-    margin: "0 auto 18px",
-    borderRadius: 28,
-    background: "linear-gradient(135deg, var(--primary), var(--primary-dark))",
-    color: "white",
-    display: "grid",
-    placeItems: "center",
-  },
-  completeTitle: {
-    margin: 0,
-    color: "var(--text)",
-    fontSize: 44,
-    letterSpacing: "-0.06em",
-    lineHeight: 1,
-  },
-  completeSubtitle: {
-    margin: "14px auto 22px",
-    maxWidth: 520,
-    color: "var(--muted)",
-    fontWeight: 700,
-    lineHeight: 1.55,
-  },
-  selectedSummary: {
+  listRow: {
     display: "flex",
-    justifyContent: "center",
-    flexWrap: "wrap",
-    gap: 8,
-    marginBottom: 24,
-  },
-  summaryPill: {
-    display: "inline-flex",
     alignItems: "center",
-    gap: 6,
-    padding: "9px 12px",
-    borderRadius: 999,
-    background: "#eef6ef",
-    color: "var(--primary-dark)",
-    fontWeight: 900,
+    gap: 10,
+    color: "#1E1E24",
+    fontWeight: 800,
   },
 };

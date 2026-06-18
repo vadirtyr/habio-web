@@ -104,6 +104,12 @@ export const recapApi = {
   generateAI: () => api.post("/weekly-recaps/ai"),
 };
 
+export const onboardingApi = {
+  getStatus: () => api.get("/onboarding/status"),
+  completeStep: (data) => api.post("/onboarding/complete-step", data),
+  complete: () => api.post("/onboarding/complete"),
+};
+
 export const uploadApi = {
   createUploadUrl: (data) => api.post("/uploads/presign", data),
   getViewUrl: (key) =>
@@ -115,6 +121,18 @@ export const orbitApi = {
   listTemplates: () => api.get("/orbit-templates"),
   get: (orbitId) => api.get(`/orbits/${orbitId}`),
   getDashboard: (orbitId) => api.get(`/orbits/${orbitId}/dashboard`),
+  getParentDashboard: (orbitId) => api.get(`/orbits/${orbitId}/parent-dashboard`),
+  getMilestones: (orbitId) => api.get(`/orbits/${orbitId}/milestones`),
+  syncMilestones: (orbitId) => api.post(`/orbits/${orbitId}/milestones/sync`),
+  getPatrolLeaderboard: (orbitId) => api.get(`/orbits/${orbitId}/patrols/leaderboard`),
+  listPatrols: (orbitId) => api.get(`/orbits/${orbitId}/patrols`),
+  createPatrol: (orbitId, data) => api.post(`/orbits/${orbitId}/patrols`, data),
+  updatePatrol: (orbitId, patrolId, data) => api.patch(`/orbits/${orbitId}/patrols/${patrolId}`, data),
+  deletePatrol: (orbitId, patrolId) => api.delete(`/orbits/${orbitId}/patrols/${patrolId}`),
+  assignPatrolMember: (orbitId, patrolId, userId) =>
+    api.post(`/orbits/${orbitId}/patrols/${patrolId}/assign`, { user_id: userId }),
+  removePatrolMember: (orbitId, patrolId, userId) =>
+    api.post(`/orbits/${orbitId}/patrols/${patrolId}/remove-member`, { user_id: userId }),
   create: (data) => api.post("/orbits", data),
   createFromTemplate: (data) => api.post("/orbits/from-template", data),
   remove: (orbitId) => api.delete(`/orbits/${orbitId}`),
@@ -171,6 +189,8 @@ export const orbitApi = {
     api.post(`/orbits/${orbitId}/events/${eventId}/rsvp`, { status }),
   getEventReadiness: (orbitId, eventId) =>
     api.get(`/orbits/${orbitId}/events/${eventId}/readiness`),
+  getEventPatrolReadiness: (orbitId, eventId) =>
+    api.get(`/orbits/${orbitId}/events/${eventId}/readiness/patrols`),
   createEventReadinessItem: (orbitId, eventId, data) =>
     api.post(`/orbits/${orbitId}/events/${eventId}/readiness/items`, data),
   updateEventReadinessItem: (orbitId, eventId, itemId, data) =>
