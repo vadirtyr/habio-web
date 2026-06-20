@@ -80,6 +80,61 @@ const SUCCESS_ACTIONS = {
   blank: ["Invite a member", "Create your first challenge", "Add an event"],
 };
 
+const INVITE_MESSAGES = {
+  family: "Invite family members.",
+  scout_troop: "Invite leaders, parents, and scouts.",
+  accountability_circle: "Invite accountability partners.",
+  fitness_group: "Invite workout partners.",
+  study_group: "Invite study group members.",
+  blank: "Invite members into your Orbit.",
+};
+
+const REWARD_SUGGESTIONS = {
+  family: [
+    "Family Movie Night",
+    "Pizza Night",
+    "Choose Dinner",
+    "Extra Screen Time",
+    "Family Activity Choice",
+  ],
+  scout_troop: [
+    "Troop Recognition",
+    "Patrol Pizza Party",
+    "Campout Privilege",
+    "Patrol Choice Activity",
+    "Custom Troop Reward",
+  ],
+  accountability_circle: [
+    "Group Celebration",
+    "Accountability Champion",
+    "Consistency Award",
+  ],
+  fitness_group: [
+    "Group Workout Celebration",
+    "Fitness Champion",
+    "Team Achievement Award",
+  ],
+  study_group: [
+    "Study Streak Award",
+    "Group Celebration",
+    "Focus Champion",
+  ],
+  blank: [
+    "Group Celebration",
+    "Milestone Reward",
+    "Team Choice Reward",
+  ],
+};
+
+const CUSTOM_REWARD_PLACEHOLDERS = {
+  family: "Ice cream trip",
+  scout_troop: "Patrol pizza party",
+  fitness_group: "Group celebration meal",
+  study_group: "Exam celebration",
+  accountability_circle: "Coffee shop celebration",
+  blank: "Group celebration",
+};
+
 const CHECKLIST = [
   "Create or Join an Orbit",
   "Invite a Member",
@@ -100,6 +155,11 @@ export default function Onboarding() {
   const [inviteCode, setInviteCode] = useState("");
   const [orbit, setOrbit] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [selectedRewards, setSelectedRewards] = useState(REWARD_SUGGESTIONS.family);
+  const [customReward, setCustomReward] = useState("");
+  const [rewardsAdded, setRewardsAdded] = useState(false);
+  const [inviteLink, setInviteLink] = useState("");
+  const [inviteEmails, setInviteEmails] = useState("");
   const [checklist, setChecklist] = useState({
     create_or_join_orbit: false,
   });
@@ -109,7 +169,8 @@ export default function Onboarding() {
     [templateId]
   );
 
-  const progress = Math.round(((step + 1) / 7) * 100);
+  const progress = Math.round(((step + 1) / 9) * 100);
+  const rewardSuggestions = REWARD_SUGGESTIONS[templateId] || REWARD_SUGGESTIONS.blank;
   const suggestedActions = SUCCESS_ACTIONS[templateId] || SUCCESS_ACTIONS.blank;
 
   async function markStep(data) {
@@ -121,11 +182,13 @@ export default function Onboarding() {
   function selectGoal(item) {
     setGoal(item.id);
     setTemplateId(item.template);
+    setSelectedRewards(REWARD_SUGGESTIONS[item.template] || REWARD_SUGGESTIONS.blank);
     markStep({ step: "goal_selected", onboarding_goal: item.id });
   }
 
   function selectTemplate(id) {
     setTemplateId(id);
+    setSelectedRewards(REWARD_SUGGESTIONS[id] || REWARD_SUGGESTIONS.blank);
     markStep({ step: "template_selected" });
   }
 
@@ -153,10 +216,8 @@ export default function Onboarding() {
       setChecklist({ create_or_join_orbit: true });
 
       await markStep({
-        step: "success",
         checklist_item: "create_or_join_orbit",
       });
-      await completeOnboarding();
 
       toast.success("Your Orbit is ready.");
       setStep(5);
@@ -190,10 +251,8 @@ export default function Onboarding() {
       setChecklist({ create_or_join_orbit: true });
 
       await markStep({
-        step: "success",
         checklist_item: "create_or_join_orbit",
       });
-      await completeOnboarding();
 
       toast.success("You joined the Orbit.");
       setStep(5);
@@ -202,6 +261,143 @@ export default function Onboarding() {
         err.response?.data?.detail ||
           err.message ||
           "Failed to join Orbit"
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function toggleReward(title) {
+    setSelectedRewards((current) =>
+      current.includes(title)
+        ? current.filter((item) => item !== title)
+        : [...current, title]
+    );
+  }
+
+  async function continueToSuccess({ addRewards = false } = {}) {
+    if (addRewards && mode === "create") {
+      const rewardTitles = [
+        ...selectedRewards,
+        ...(customReward.trim() ? [customReward.trim()] : []),
+      ];
+
+      if (orbit?.id && rewardTitles.length) {
+        setSaving(true);
+
+        try {
+          const existing = await orbitApi.listRewards(orbit.id);
+          const existingTitles = new Set(
+            (existing.data?.items || existing.data || [])
+              .map((reward) => reward?.title?.trim().toLowerCase())
+              .filter(Boolean)
+          );
+          const uniqueTitles = rewardTitles.filter(
+            (title, index, all) =>
+              title &&
+              all.findIndex(
+                (item) => item.trim().toLowerCase() === title.trim().toLowerCase()
+              ) === index &&
+              !existingTitles.has(title.trim().toLowerCase())
+          );
+
+          for (const title of uniqueTitles) {
+            await orbitApi.createReward(orbit.id, {
+              title,
+              description: "Starter reward added during onboarding.",
+              xp_cost: 500,
+            });
+          }
+
+          setRewardsAdded(uniqueTitles.length > 0);
+        } catch (err) {
+          toast.error(
+            err.response?.data?.detail ||
+              err.message ||
+              "Could not add rewards. You can add them from your Orbit later."
+          );
+          return;
+        } finally {
+          setSaving(false);
+        }
+      }
+    }
+
+    await markStep({ step: "success" });
+    await completeOnboarding();
+    setStep(mode === "create" ? 6 : 7);
+  }
+
+  async function createOnboardingInviteLink({ share = false } = {}) {
+    if (!orbit?.id) return;
+
+    setSaving(true);
+
+    try {
+      let link = inviteLink;
+      if (!link) {
+        const { data } = await orbitApi.createInviteLink(orbit.id);
+        link = `${window.location.origin}/orbit-invite/${data.token}`;
+        setInviteLink(link);
+      }
+
+      setChecklist((current) => ({ ...current, invite_member: true }));
+      await markStep({ checklist_item: "invite_member" });
+
+      if (share && navigator.share) {
+        await navigator.share({
+          title: `Join ${orbit.name} on OurOrbit`,
+          text: `Join ${orbit.name} on OurOrbit.`,
+          url: link,
+        });
+      } else {
+        await navigator.clipboard?.writeText(link);
+        toast.success("Invite link copied.");
+      }
+    } catch (err) {
+      if (err?.name !== "AbortError") {
+        toast.error(
+          err.response?.data?.detail ||
+            err.message ||
+            "Could not create invite link"
+        );
+      }
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function sendOnboardingEmailInvites() {
+    const emails = inviteEmails
+      .split(/[\s,;]+/)
+      .map((value) => value.trim().toLowerCase())
+      .filter(Boolean);
+
+    if (!orbit?.id || !emails.length) {
+      toast.error("Enter at least one email address");
+      return;
+    }
+
+    setSaving(true);
+
+    try {
+      const { data } = await orbitApi.sendEmailInvites(orbit.id, emails);
+      const sentCount = data.items?.length || 0;
+      const errors = data.errors || [];
+
+      if (sentCount) {
+        setInviteEmails("");
+        setChecklist((current) => ({ ...current, invite_member: true }));
+        await markStep({ checklist_item: "invite_member" });
+        toast.success(`${sentCount} email invitation${sentCount === 1 ? "" : "s"} sent`);
+      }
+      errors.forEach((item) => toast.error(`${item.email}: ${item.detail}`));
+      if (!sentCount && !errors.length) toast.error("No invitations sent");
+    } catch (err) {
+      toast.error(
+        err.response?.data?.detail ||
+          err.message ||
+          "Could not send invites"
       );
     } finally {
       setSaving(false);
@@ -323,7 +519,7 @@ export default function Onboarding() {
               disabled={!mode}
               onClick={() => {
                 markStep({ step: "join_or_create_selected" });
-                setStep(mode === "join" ? 5 : 3);
+                setStep(mode === "join" ? 4 : 3);
               }}
             >
               Continue
@@ -355,7 +551,7 @@ export default function Onboarding() {
           </>
         )}
 
-        {step === 4 && (
+        {step === 4 && mode === "create" && (
           <>
             <h2 style={styles.cardTitle}>
               {templateId === "scout_troop" ? "Troop Name" : "Orbit Name"}
@@ -377,7 +573,7 @@ export default function Onboarding() {
           </>
         )}
 
-        {step === 5 && mode === "join" && !orbit && (
+        {step === 4 && mode === "join" && !orbit && (
           <>
             <h2 style={styles.cardTitle}>Enter Invite Code</h2>
             <p style={styles.cardText}>Paste the invite code from your existing Orbit.</p>
@@ -399,11 +595,125 @@ export default function Onboarding() {
 
         {step === 5 && orbit && (
           <>
+            <h2 style={styles.cardTitle}>Why Rewards Matter</h2>
+            <p style={styles.cardText}>
+              Rewards help reinforce positive habits, participation, and progress.
+            </p>
+            <p style={styles.cardText}>
+              A reward can be anything meaningful to your group: family movie night,
+              extra screen time, choosing dinner, patrol pizza party, a group
+              celebration, or a special outing.
+            </p>
+            <p style={styles.cardText}>
+              Members earn rewards by completing habits, tasks, challenges, and group goals.
+            </p>
+
+            <div style={styles.optionGrid}>
+              {rewardSuggestions.map((title) =>
+                renderOption({
+                  active: selectedRewards.includes(title),
+                  title,
+                  Icon: selectedRewards.includes(title) ? CheckCircle2 : Circle,
+                  onClick: () => toggleReward(title),
+                })
+              )}
+            </div>
+
+            <label style={styles.label}>
+              What's one reward your group would actually get excited about?
+            </label>
+            <input
+              style={styles.input}
+              value={customReward}
+              onChange={(event) => setCustomReward(event.target.value)}
+              placeholder={CUSTOM_REWARD_PLACEHOLDERS[templateId] || CUSTOM_REWARD_PLACEHOLDERS.blank}
+            />
+            {mode === "create" && (
+              <button
+                style={{ ...styles.primaryButton, ...(saving ? styles.disabled : {}) }}
+                disabled={saving}
+                onClick={() => continueToSuccess({ addRewards: true })}
+              >
+                {saving ? "Adding Rewards..." : "Add Selected Rewards"}
+              </button>
+            )}
+            <button
+              style={mode === "create" ? styles.secondaryButton : styles.primaryButton}
+              disabled={saving}
+              onClick={() => continueToSuccess({ addRewards: false })}
+            >
+              {mode === "create" ? "Skip For Now" : "Continue"}
+            </button>
+          </>
+        )}
+
+        {step === 6 && orbit && mode === "create" && (
+          <>
+            <h2 style={styles.cardTitle}>Invite members now?</h2>
+            <p style={styles.cardText}>
+              {INVITE_MESSAGES[templateId] || INVITE_MESSAGES.blank}
+            </p>
+            <p style={styles.cardText}>
+              Bring people in now so your shared habits, challenges, rewards, and events feel alive from day one.
+            </p>
+            {inviteLink && (
+              <input
+                readOnly
+                value={inviteLink}
+                style={styles.input}
+                onFocus={(event) => event.target.select()}
+              />
+            )}
+            <div style={styles.buttonRow}>
+              <button
+                style={styles.primaryButton}
+                disabled={saving}
+                onClick={() => createOnboardingInviteLink({ share: false })}
+              >
+                Copy Link
+              </button>
+              <button
+                style={styles.secondaryButton}
+                disabled={saving}
+                onClick={() => createOnboardingInviteLink({ share: true })}
+              >
+                Share Invite
+              </button>
+            </div>
+            <textarea
+              style={{ ...styles.input, ...styles.textarea }}
+              value={inviteEmails}
+              onChange={(event) => setInviteEmails(event.target.value)}
+              placeholder={"parent1@example.com\nparent2@example.com\nleader@example.com"}
+            />
+            <button
+              style={{ ...styles.primaryButton, ...(saving ? styles.disabled : {}) }}
+              disabled={saving}
+              onClick={sendOnboardingEmailInvites}
+            >
+              {saving ? "Sending..." : "Email Invite"}
+            </button>
+            <button
+              style={styles.secondaryButton}
+              disabled={saving}
+              onClick={() => setStep(7)}
+            >
+              Skip
+            </button>
+          </>
+        )}
+
+        {step === 7 && orbit && (
+          <>
             <div style={styles.iconBubble}>
               <CheckCircle2 size={32} />
             </div>
             <h2 style={styles.cardTitle}>Your Orbit is ready.</h2>
-            <p style={styles.cardText}>Here are the best next actions to build momentum.</p>
+            <p style={styles.cardText}>
+              {rewardsAdded
+                ? "Great! Your group now has rewards to work toward."
+                : "Here are the best next actions to build momentum."}
+            </p>
             <div style={styles.list}>
               {suggestedActions.map((action) => (
                 <div key={action} style={styles.listRow}>
@@ -412,13 +722,13 @@ export default function Onboarding() {
                 </div>
               ))}
             </div>
-            <button style={styles.primaryButton} onClick={() => setStep(6)}>
+            <button style={styles.primaryButton} onClick={() => setStep(8)}>
               View Getting Started Checklist
             </button>
           </>
         )}
 
-        {step === 6 && (
+        {step === 8 && (
           <>
             <h2 style={styles.cardTitle}>Getting Started Checklist</h2>
             <p style={styles.cardText}>
@@ -426,7 +736,9 @@ export default function Onboarding() {
             </p>
             <div style={styles.list}>
               {CHECKLIST.map((item, index) => {
-                const done = index === 0 && checklist.create_or_join_orbit;
+                const done =
+                  (index === 0 && checklist.create_or_join_orbit) ||
+                  (index === 1 && checklist.invite_member);
                 return (
                   <div key={item} style={styles.listRow}>
                     {done ? <CheckCircle2 size={18} /> : <Circle size={18} />}
@@ -573,6 +885,16 @@ const styles = {
     fontWeight: 700,
     boxSizing: "border-box",
   },
+  textarea: {
+    minHeight: 110,
+    paddingTop: 14,
+    resize: "vertical",
+  },
+  label: {
+    color: "#1E1E24",
+    fontSize: 15,
+    fontWeight: 900,
+  },
   primaryButton: {
     minHeight: 52,
     padding: "0 22px",
@@ -599,6 +921,11 @@ const styles = {
   disabled: {
     opacity: 0.55,
     cursor: "not-allowed",
+  },
+  buttonRow: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+    gap: 12,
   },
   list: {
     display: "grid",

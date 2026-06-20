@@ -16,6 +16,7 @@ export default function OrbitMembers() {
   const [inviteLink, setInviteLink] = useState("");
   const [linkInvites, setLinkInvites] = useState([]);
   const [emailInvites, setEmailInvites] = useState([]);
+  const [inviteSummary, setInviteSummary] = useState({ pending: 0, accepted: 0, expired: 0 });
   const [emailText, setEmailText] = useState("");
 
   const load = useCallback(async () => {
@@ -26,9 +27,15 @@ export default function OrbitMembers() {
         const { data: invites } = await orbitApi.listOrbitInvites(orbitId);
         setLinkInvites(invites.link_invites || []);
         setEmailInvites(invites.email_invites || []);
+        setInviteSummary({
+          pending: invites.pending || 0,
+          accepted: invites.accepted || 0,
+          expired: invites.expired || 0,
+        });
       } else {
         setLinkInvites([]);
         setEmailInvites([]);
+        setInviteSummary({ pending: 0, accepted: 0, expired: 0 });
       }
     }
     catch (err) { toast.error(formatApiError(err.response?.data?.detail)); }
@@ -60,7 +67,7 @@ export default function OrbitMembers() {
       setInviteLink(link);
       await load();
       await navigator.clipboard?.writeText(link);
-      toast.success("Invite link created and copied");
+      toast.success("Invite link copied.");
     } catch (err) { toast.error(formatApiError(err.response?.data?.detail) || err.message); }
     finally { setBusy(null); }
   }
@@ -83,7 +90,7 @@ export default function OrbitMembers() {
 
   async function copyLinkInvite(invite) {
     const link = `${window.location.origin}/orbit-invite/${invite.token}`;
-    try { await navigator.clipboard.writeText(link); toast.success("Invite link copied"); }
+    try { await navigator.clipboard.writeText(link); toast.success("Invite link copied."); }
     catch { toast.error("Copy failed. Select the link and copy it manually."); }
   }
 
@@ -96,8 +103,25 @@ export default function OrbitMembers() {
   }
 
   async function copyInviteLink() {
-    try { await navigator.clipboard.writeText(inviteLink); toast.success("Invite link copied"); }
+    try { await navigator.clipboard.writeText(inviteLink); toast.success("Invite link copied."); }
     catch { toast.error("Copy failed. Select the link and copy it manually."); }
+  }
+
+  async function shareInviteLink(link) {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `Join ${orbit.name} on OurOrbit`,
+          text: `Join ${orbit.name} on OurOrbit.`,
+          url: link,
+        });
+        return;
+      } catch (err) {
+        if (err?.name === "AbortError") return;
+      }
+    }
+    await navigator.clipboard?.writeText(link);
+    toast.success("Invite link copied.");
   }
 
   async function remove(member) {
@@ -130,10 +154,23 @@ export default function OrbitMembers() {
   const canManage = orbit.viewer_role === "owner" || orbit.viewer_role === "admin";
   const isOwner = orbit.viewer_role === "owner";
 
-  return <div style={s.page}><header style={s.header}><div><p style={s.eyebrow}>Shared Orbit</p><h1 style={s.title}>Members</h1><p style={s.subtitle}>{orbit.member_count} people in {orbit.name}</p></div><button style={s.secondaryButton} onClick={() => navigate(`/orbits/${orbitId}`)}>Back</button></header>
-    {canManage && <><div style={{...s.card, marginBottom:14}}><h2 style={{...s.name, fontSize:22}}>Invite by email</h2><p style={s.muted}>Send a private, single-use invitation. Separate multiple addresses with commas.</p><input style={{...s.input, marginTop:14}} value={emailText} onChange={event => setEmailText(event.target.value)} placeholder="person@example.com"/><button style={{...s.button, marginTop:14}} disabled={busy === "email-invites"} onClick={sendEmailInvites}>{busy === "email-invites" ? "Sending..." : "Send invitation"}</button></div>{emailInvites.length > 0 && <><h2 style={s.sectionTitle}>Pending email invitations</h2><div style={s.cardStack}>{emailInvites.map(invite => { const link = `${window.location.origin}/orbit-invite/${invite.token}`; return <div key={invite.id} style={s.card}><strong style={{color:"var(--text)"}}>{invite.email}</strong><p style={s.muted}>Expires {new Date(invite.expires_at).toLocaleDateString()}</p><div style={{...s.actions, marginTop:12}}><button style={s.secondaryButton} onClick={() => navigator.clipboard.writeText(link).then(() => toast.success("Invite link copied"))}>Copy link</button><button style={s.dangerButton} disabled={busy === `invite-${invite.id}`} onClick={() => revokeInvite(invite)}>Revoke</button></div></div>; })}</div></>}</>}
-    {canManage && <><div style={{...s.card, marginBottom:14}}><h2 style={{...s.name, fontSize:22}}>Invite link</h2><p style={s.muted}>Create a reusable link for someone to join as a member.</p>{inviteLink && <input readOnly value={inviteLink} style={{...s.input, marginTop:14}} onFocus={event => event.target.select()}/>}<div style={{...s.actions, marginTop:14}}><button style={s.button} disabled={busy === "invite-link"} onClick={inviteLink ? copyInviteLink : createInviteLink}>{inviteLink ? "Copy link" : "Create invite link"}</button></div></div>{linkInvites.length > 0 && <><h2 style={s.sectionTitle}>Active invite links</h2><div style={s.cardStack}>{linkInvites.map(invite => { const link = `${window.location.origin}/orbit-invite/${invite.token}`; return <div key={invite.id} style={s.card}><input readOnly value={link} style={s.input} onFocus={event => event.target.select()}/><p style={s.muted}>{invite.uses_count || 0} use{invite.uses_count === 1 ? "" : "s"}{invite.max_uses ? ` of ${invite.max_uses}` : ""}</p><div style={{...s.actions, marginTop:12}}><button style={s.secondaryButton} onClick={() => copyLinkInvite(invite)}>Copy</button><button style={s.dangerButton} disabled={busy === `invite-${invite.id}`} onClick={() => revokeInvite(invite)}>Revoke</button></div></div>; })}</div></>}<div style={{...s.card, marginTop:14}}><h2 style={{...s.name, fontSize:22}}>Invite someone</h2><div style={{display:"flex", alignItems:"center", gap:10, marginTop:16}}><Search size={19} color="var(--muted)"/><input style={{...s.input, border:0, paddingLeft:0}} value={query} onChange={e => setQuery(e.target.value)} placeholder="Search by username or name"/></div>{results.length > 0 && <div style={{...s.cardStack, marginTop:12}}>{results.map(user => <button key={user.id} onClick={() => invite(user)} disabled={busy === user.id} style={{...s.row, border:0, borderTop:"1px solid var(--border)", background:"transparent", padding:"13px 0 0", cursor:"pointer", textAlign:"left"}}><div style={{display:"flex", alignItems:"center", gap:12}}><UserAvatar user={user} size={34}/><div><strong style={{color:"var(--text)"}}>{user.display_name || user.name || user.username}</strong><p style={{...s.muted, marginTop:2}}>@{user.username}</p></div></div><Plus color="var(--primary)"/></button>)}</div>}</div></>}
+  return <div style={s.page}><header style={s.header}><div><p style={s.eyebrow}>Shared Orbit</p><h1 style={s.title}>Members & Invite Hub</h1><p style={s.subtitle}>{orbit.member_count} people in {orbit.name}</p></div><button style={s.secondaryButton} onClick={() => navigate(`/orbits/${orbitId}`)}>Back</button></header>
+    {canManage && <><section style={{...s.card, marginBottom:14}}><h2 style={{...s.name, fontSize:22}}>Orbit Invite Hub</h2><p style={s.muted}>Invite people, share the Orbit code, and track invite progress.</p><div style={styles.statGrid}><InviteStat label="Pending" value={inviteSummary.pending}/><InviteStat label="Accepted" value={inviteSummary.accepted}/><InviteStat label="Expired" value={inviteSummary.expired}/></div>{orbit.invite_code && <div style={styles.codeBox}><p style={{...s.muted, margin:0}}>Invite Code</p><strong style={styles.code}>{orbit.invite_code}</strong></div>}</section><div style={{...s.card, marginBottom:14}}><h2 style={{...s.name, fontSize:22}}>Invite by email</h2><p style={s.muted}>Send private, single-use invitations. Separate addresses with commas, spaces, or new lines.</p><textarea style={{...s.input, ...styles.textarea, marginTop:14}} value={emailText} onChange={event => setEmailText(event.target.value)} placeholder={"parent1@example.com\nparent2@example.com\nleader@example.com"}/><button style={{...s.button, marginTop:14}} disabled={busy === "email-invites"} onClick={sendEmailInvites}>{busy === "email-invites" ? "Sending..." : "Send invitations"}</button></div>{emailInvites.length > 0 && <><h2 style={s.sectionTitle}>Pending email invitations</h2><div style={s.cardStack}>{emailInvites.map(invite => { const link = `${window.location.origin}/orbit-invite/${invite.token}`; return <div key={invite.id} style={s.card}><strong style={{color:"var(--text)"}}>{invite.email}</strong><p style={s.muted}>Expires {new Date(invite.expires_at).toLocaleDateString()}</p><div style={{...s.actions, marginTop:12}}><button style={s.secondaryButton} onClick={() => copyLinkInvite(invite)}>Copy link</button><button style={s.secondaryButton} onClick={() => shareInviteLink(link)}>Share invite</button><button style={s.dangerButton} disabled={busy === `invite-${invite.id}`} onClick={() => revokeInvite(invite)}>Revoke</button></div></div>; })}</div></>}</>}
+    {canManage && <><div style={{...s.card, marginBottom:14}}><h2 style={{...s.name, fontSize:22}}>Invite link</h2><p style={s.muted}>Create a reusable link for someone to join as a member.</p>{inviteLink && <input readOnly value={inviteLink} style={{...s.input, marginTop:14}} onFocus={event => event.target.select()}/>}<div style={{...s.actions, marginTop:14}}><button style={s.button} disabled={busy === "invite-link"} onClick={inviteLink ? copyInviteLink : createInviteLink}>{inviteLink ? "Copy link" : "Create invite link"}</button>{inviteLink && <button style={s.secondaryButton} onClick={() => shareInviteLink(inviteLink)}>Share invite</button>}</div></div>{linkInvites.length > 0 && <><h2 style={s.sectionTitle}>Active invite links</h2><div style={s.cardStack}>{linkInvites.map(invite => { const link = `${window.location.origin}/orbit-invite/${invite.token}`; return <div key={invite.id} style={s.card}><input readOnly value={link} style={s.input} onFocus={event => event.target.select()}/><p style={s.muted}>{invite.uses_count || 0} accepted via this link{invite.max_uses ? ` of ${invite.max_uses}` : ""}</p><div style={{...s.actions, marginTop:12}}><button style={s.secondaryButton} onClick={() => copyLinkInvite(invite)}>Copy</button><button style={s.secondaryButton} onClick={() => shareInviteLink(link)}>Share</button><button style={s.dangerButton} disabled={busy === `invite-${invite.id}`} onClick={() => revokeInvite(invite)}>Revoke</button></div></div>; })}</div></>}<div style={{...s.card, marginTop:14}}><h2 style={{...s.name, fontSize:22}}>Invite someone</h2><div style={{display:"flex", alignItems:"center", gap:10, marginTop:16}}><Search size={19} color="var(--muted)"/><input style={{...s.input, border:0, paddingLeft:0}} value={query} onChange={e => setQuery(e.target.value)} placeholder="Search by username or name"/></div>{results.length > 0 && <div style={{...s.cardStack, marginTop:12}}>{results.map(user => <button key={user.id} onClick={() => invite(user)} disabled={busy === user.id} style={{...s.row, border:0, borderTop:"1px solid var(--border)", background:"transparent", padding:"13px 0 0", cursor:"pointer", textAlign:"left"}}><div style={{display:"flex", alignItems:"center", gap:12}}><UserAvatar user={user} size={34}/><div><strong style={{color:"var(--text)"}}>{user.display_name || user.name || user.username}</strong><p style={{...s.muted, marginTop:2}}>@{user.username}</p></div></div><Plus color="var(--primary)"/></button>)}</div>}</div></>}
     <h2 style={s.sectionTitle}>Current members</h2><div style={s.cardStack}>{(orbit.members || []).map(member => <div key={member.user_id} style={{...s.card, ...s.row}}><div style={{display:"flex", alignItems:"center", gap:12}}><UserAvatar user={member.user} size={38}/><div><h3 style={{...s.name, fontSize:17}}>{member.user?.display_name || member.user?.name || "Member"}</h3><span style={{...s.badge, display:"inline-block", marginTop:5, textTransform:"capitalize"}}>{member.role}</span></div></div><div style={{display:"flex", gap:8, flexWrap:"wrap", justifyContent:"flex-end"}}>{isOwner && member.role !== "owner" && <button style={s.secondaryButton} disabled={busy === `owner-${member.user_id}`} onClick={() => transferOwnership(member)}>Make owner</button>}{isOwner && member.role !== "owner" && <button style={s.secondaryButton} disabled={busy === `role-${member.user_id}`} onClick={() => changeRole(member)}>{member.role === "admin" ? "Demote" : "Promote"}</button>}{canManage && member.role !== "owner" && (isOwner || member.role === "member") && <button style={s.dangerButton} disabled={busy === member.user_id} onClick={() => remove(member)}>Remove</button>}</div></div>)}</div>
     {canManage && orbit.pending_invites?.length > 0 && <><h2 style={s.sectionTitle}>Pending invites</h2><div style={s.cardStack}>{orbit.pending_invites.map(invite => <div key={invite.id} style={s.card}><p style={{...s.muted, margin:0}}>{invite.email || invite.invitee_id}</p></div>)}</div></>}
   </div>;
 }
+
+function InviteStat({ label, value }) {
+  return <div style={styles.statCard}><strong style={styles.statValue}>{value}</strong><span style={s.muted}>{label}</span></div>;
+}
+
+const styles = {
+  statGrid: { display:"grid", gridTemplateColumns:"repeat(3, minmax(0, 1fr))", gap:12, marginTop:16 },
+  statCard: { padding:14, borderRadius:18, background:"color-mix(in srgb, var(--primary) 8%, var(--surface))", textAlign:"center" },
+  statValue: { display:"block", color:"var(--text)", fontSize:24 },
+  codeBox: { marginTop:16, padding:14, borderRadius:18, background:"var(--surface-muted, rgba(0,0,0,0.04))" },
+  code: { display:"block", marginTop:4, color:"var(--text)", fontSize:26, letterSpacing:2 },
+  textarea: { minHeight:110, resize:"vertical", paddingTop:14 },
+};

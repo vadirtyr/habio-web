@@ -98,6 +98,12 @@ export const statsApi = {
   getStats: () => api.get("/stats"),
 };
 
+export const adminApi = {
+  getOrbitGrowth: () => api.get("/admin/analytics/orbit-growth"),
+  getTemplateAdoption: () => api.get("/admin/analytics/template-adoption"),
+  getRetention30d: () => api.get("/admin/analytics/retention-30d"),
+};
+
 export const recapApi = {
   list: () => api.get("/weekly-recaps"),
   generate: () => api.post("/weekly-recaps/generate"),

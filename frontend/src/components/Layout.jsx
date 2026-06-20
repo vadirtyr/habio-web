@@ -31,7 +31,7 @@ const NAV_ITEMS = [
 
 export default function Layout({ children }) {
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
 
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -145,7 +145,7 @@ export default function Layout({ children }) {
               flexWrap: isMobile ? "wrap" : "nowrap",
             }}
           >
-            {NAV_ITEMS.map((item) => (
+            {[...NAV_ITEMS, ...(user?.is_admin ? [{ label: "Orbit Growth", path: "/admin/orbit-growth", icon: "📊" }] : [])].map((item) => (
               <NavLink
                 key={item.path}
                 to={item.path}

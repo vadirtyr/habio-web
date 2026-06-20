@@ -72,6 +72,7 @@ import OrbitDetail from "@/pages/OrbitDetail";
 import OrbitMembers from "@/pages/OrbitMembers";
 import OrbitInvite from "@/pages/OrbitInvite";
 import CreateOrbitGoal from "@/pages/CreateOrbitGoal";
+import OrbitGrowthAnalytics from "@/pages/OrbitGrowthAnalytics";
 
 const TOAST_OPTIONS = {
   style: {
@@ -270,6 +271,7 @@ function App() {
                 <Route path="/orbits/:orbitId" element={<Shell><OrbitDetail /></Shell>} />
                 <Route path="/orbits/:orbitId/members" element={<Shell><OrbitMembers /></Shell>} />
                 <Route path="/orbits/:orbitId/goals/new" element={<Shell><CreateOrbitGoal /></Shell>} />
+                <Route path="/admin/orbit-growth" element={<Shell><OrbitGrowthAnalytics /></Shell>} />
 
                 <Route
                   path="/themes"
