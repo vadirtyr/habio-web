@@ -46,6 +46,14 @@ const TEMPLATES = [
     highlights: ["Study sessions", "Reading goals", "Exam prep"],
   },
   {
+    id: "couples",
+    icon: "💕",
+    name: "Couples",
+    description: "Strengthen your relationship with shared goals, date nights, gratitude, and milestones.",
+    nameSuggestion: "Our Shared Orbit",
+    highlights: ["Date nights", "Daily gratitude", "Shared milestones"],
+  },
+  {
     id: "blank",
     icon: "✨",
     name: "Blank Orbit",
@@ -70,6 +78,7 @@ export default function CreateOrbit() {
   const isAccountabilityCircle = selected.id === "accountability_circle";
   const isFitnessGroup = selected.id === "fitness_group";
   const isStudyGroup = selected.id === "study_group";
+  const isCouples = selected.id === "couples";
   const createLabel = saving
     ? "Creating..."
     : isFamily
@@ -82,7 +91,9 @@ export default function CreateOrbit() {
             ? "Create Fitness Group"
             : isStudyGroup
               ? "Create Study Group"
-              : "Create Blank Orbit";
+              : isCouples
+                ? "Create Couples Orbit"
+                : "Create Blank Orbit";
   const namePlaceholder = isFamily
     ? "Williams Family"
     : isScoutTroop
@@ -93,7 +104,9 @@ export default function CreateOrbit() {
           ? "Morning Fitness Group"
           : isStudyGroup
             ? "Exam Prep Study Group"
-            : "My Orbit";
+            : isCouples
+              ? "Our Shared Orbit"
+              : "My Orbit";
   const progressText = `Step ${step + 1} of 3`;
   const nextLabel = selected.id === BLANK_TEMPLATE_ID ? "Continue with Blank Orbit" : `Continue with ${selected.name}`;
 
@@ -119,7 +132,7 @@ export default function CreateOrbit() {
         description: selected.id === "blank" ? description.trim() : "",
         template: selected.id,
       });
-      toast.success(isFamily ? "Family Orbit created" : isScoutTroop ? "Scout Troop created" : isAccountabilityCircle ? "Accountability Circle created" : isFitnessGroup ? "Fitness Group created" : isStudyGroup ? "Study Group created" : "Blank Orbit created");
+      toast.success(isFamily ? "Family Orbit created" : isScoutTroop ? "Scout Troop created" : isAccountabilityCircle ? "Accountability Circle created" : isFitnessGroup ? "Fitness Group created" : isStudyGroup ? "Study Group created" : isCouples ? "Couples Orbit created" : "Blank Orbit created");
       navigate(`/orbits/${data.id}`, { replace: true });
     } catch (err) { toast.error(formatApiError(err.response?.data?.detail)); }
     finally { setSaving(false); }

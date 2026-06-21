@@ -46,6 +46,7 @@ export default function OrbitDetail() {
   const [parentDashboard, setParentDashboard] = useState(null);
   const [troopMilestones, setTroopMilestones] = useState([]);
   const [events, setEvents] = useState([]);
+  const [seasons, setSeasons] = useState([]);
   const [patrolLeaderboard, setPatrolLeaderboard] = useState([]);
   const [readinessByEvent, setReadinessByEvent] = useState({});
   const [patrolReadinessByEvent, setPatrolReadinessByEvent] = useState({});
@@ -66,6 +67,7 @@ export default function OrbitDetail() {
   const [rewardTitle, setRewardTitle] = useState("");
   const [rewardDescription, setRewardDescription] = useState("");
   const [rewardCost, setRewardCost] = useState("500");
+  const [rewardSeasonId, setRewardSeasonId] = useState("");
   const [showEventForm, setShowEventForm] = useState(false);
   const [editingEvent, setEditingEvent] = useState(null);
   const [eventTitle, setEventTitle] = useState("");
@@ -73,6 +75,17 @@ export default function OrbitDetail() {
   const [eventLocation, setEventLocation] = useState("");
   const [eventStart, setEventStart] = useState("");
   const [eventEnd, setEventEnd] = useState("");
+  const [eventSeasonId, setEventSeasonId] = useState("");
+  const [showSeasonForm, setShowSeasonForm] = useState(false);
+  const [editingSeason, setEditingSeason] = useState(null);
+  const [seasonTitle, setSeasonTitle] = useState("");
+  const [seasonDescription, setSeasonDescription] = useState("");
+  const [seasonStartDate, setSeasonStartDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [seasonEndDate, setSeasonEndDate] = useState(() => {
+    const end = new Date();
+    end.setUTCDate(end.getUTCDate() + 30);
+    return end.toISOString().slice(0, 10);
+  });
   const [readinessForm, setReadinessForm] = useState(null);
   const [readinessTitle, setReadinessTitle] = useState("");
   const [readinessDescription, setReadinessDescription] = useState("");
@@ -85,15 +98,17 @@ export default function OrbitDetail() {
     try {
       const { data } = await orbitApi.getDashboard(orbitId);
       setDashboard(data);
-      const [{ data: recapData }, { data: patrolLeaderboardData }, { data: eventData }] = await Promise.all([
+      const [{ data: recapData }, { data: patrolLeaderboardData }, { data: eventData }, { data: seasonData }] = await Promise.all([
         orbitApi.listWeeklyRecaps(orbitId),
         orbitApi.getPatrolLeaderboard(orbitId),
         orbitApi.listEvents(orbitId),
+        orbitApi.listSeasons(orbitId),
       ]);
       setOrbitRecaps(Array.isArray(recapData?.items) ? recapData.items : []);
       setPatrolLeaderboard(Array.isArray(patrolLeaderboardData?.items) ? patrolLeaderboardData.items : []);
       const eventItems = Array.isArray(eventData?.items) ? eventData.items : [];
       setEvents(eventItems);
+      setSeasons(Array.isArray(seasonData?.items) ? seasonData.items : []);
       const [readinessResults, patrolReadinessResults] = await Promise.all([
         Promise.allSettled(eventItems.map((event) => orbitApi.getEventReadiness(orbitId, event.id))),
         Promise.allSettled(eventItems.map((event) => orbitApi.getEventPatrolReadiness(orbitId, event.id))),
@@ -184,6 +199,7 @@ export default function OrbitDetail() {
     setRewardTitle(reward?.title || "");
     setRewardDescription(reward?.description || "");
     setRewardCost(String(reward?.xp_cost || 500));
+    setRewardSeasonId(reward?.season_id || "");
     setShowRewardForm(true);
   }
 
@@ -193,7 +209,7 @@ export default function OrbitDetail() {
     if (!rewardTitle.trim() || xpCost < 1) return;
     setBusy(editingReward ? `edit-reward-${editingReward.id}` : "create-reward");
     try {
-      const data = { title: rewardTitle.trim(), description: rewardDescription.trim(), xp_cost: xpCost };
+      const data = { title: rewardTitle.trim(), description: rewardDescription.trim(), xp_cost: xpCost, season_id: rewardSeasonId || null };
       if (editingReward) await orbitApi.updateReward(orbitId, editingReward.id, data);
       else await orbitApi.createReward(orbitId, data);
       setShowRewardForm(false);
@@ -227,6 +243,7 @@ export default function OrbitDetail() {
     setEventLocation(event?.location || "");
     setEventStart(event?.start_time ? event.start_time.slice(0, 16) : "");
     setEventEnd(event?.end_time ? event.end_time.slice(0, 16) : "");
+    setEventSeasonId(event?.season_id || "");
     setShowEventForm(true);
   }
 
@@ -241,6 +258,7 @@ export default function OrbitDetail() {
         location: eventLocation.trim(),
         start_time: eventStart.trim(),
         end_time: eventEnd.trim() || null,
+        season_id: eventSeasonId || null,
       };
       if (editingEvent) await orbitApi.updateEvent(orbitId, editingEvent.id, data);
       else await orbitApi.createEvent(orbitId, data);
@@ -266,6 +284,55 @@ export default function OrbitDetail() {
       toast.error(formatApiError(err.response?.data?.detail) || "Could not delete event");
     } finally {
       setBusy(null);
+    }
+  }
+
+  function openSeasonForm(season = null) {
+    setEditingSeason(season);
+    setSeasonTitle(season?.title || "");
+    setSeasonDescription(season?.description || "");
+    setSeasonStartDate(season?.start_date || new Date().toISOString().slice(0, 10));
+    setSeasonEndDate(season?.end_date || (() => {
+      const end = new Date();
+      end.setUTCDate(end.getUTCDate() + 30);
+      return end.toISOString().slice(0, 10);
+    })());
+    setShowSeasonForm(true);
+  }
+
+  async function saveSeason(event) {
+    event.preventDefault();
+    if (!seasonTitle.trim() || !seasonStartDate.trim() || !seasonEndDate.trim()) return;
+    setBusy(editingSeason ? `edit-season-${editingSeason.id}` : "create-season");
+    try {
+      const data = {
+        title: seasonTitle.trim(),
+        description: seasonDescription.trim(),
+        start_date: seasonStartDate.trim(),
+        end_date: seasonEndDate.trim(),
+        template: dashboard?.orbit?.template || null,
+      };
+      if (editingSeason) await orbitApi.updateSeason(orbitId, editingSeason.id, data);
+      else await orbitApi.createSeason(orbitId, data);
+      setShowSeasonForm(false);
+      setEditingSeason(null);
+      await load();
+      toast.success("Orbit season saved");
+    } catch (err) {
+      toast.error(formatApiError(err.response?.data?.detail) || "Could not save season");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function deleteSeason(season) {
+    if (!window.confirm(`Archive ${season.title}? Existing linked items will keep working.`)) return;
+    try {
+      await orbitApi.deleteSeason(orbitId, season.id);
+      await load();
+      toast.success("Orbit season archived");
+    } catch (err) {
+      toast.error(formatApiError(err.response?.data?.detail) || "Could not archive season");
     }
   }
 
@@ -630,6 +697,31 @@ export default function OrbitDetail() {
         </div>
       </section>
 
+      <div style={{...s.row, marginTop:24}}><h2 style={{...s.sectionTitle, margin:0}}>Seasons</h2>{canManage && <button style={s.secondaryButton} onClick={() => openSeasonForm()}>Create season</button>}</div>
+      {showSeasonForm && <form style={{...s.card, marginTop:16}} onSubmit={saveSeason}>
+        <h3 style={s.name}>{editingSeason ? "Edit season" : "New season"}</h3>
+        <label style={s.label}>Title</label><input style={s.input} value={seasonTitle} onChange={event => setSeasonTitle(event.target.value)} maxLength={120}/>
+        <label style={s.label}>Description</label><input style={s.input} value={seasonDescription} onChange={event => setSeasonDescription(event.target.value)} maxLength={1000}/>
+        <div style={{display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(180px, 1fr))", gap:16}}>
+          <div><label style={s.label}>Start date</label><input style={s.input} type="date" value={seasonStartDate} onChange={event => setSeasonStartDate(event.target.value)}/></div>
+          <div><label style={s.label}>End date</label><input style={s.input} type="date" value={seasonEndDate} onChange={event => setSeasonEndDate(event.target.value)}/></div>
+        </div>
+        <div style={s.actions}><button type="button" style={s.secondaryButton} onClick={() => { setShowSeasonForm(false); setEditingSeason(null); }}>Cancel</button><button style={s.button} disabled={busy || !seasonTitle.trim()}>Save</button></div>
+      </form>}
+      {seasons.length ? <div style={{...s.cardStack, marginTop:16}}>{seasons.map(season => <section key={season.id} style={s.card}>
+        <div style={s.row}>
+          <div><h3 style={s.name}>{season.title}</h3>{season.description && <p style={s.muted}>{season.description}</p>}<p style={s.muted}>{season.start_date} → {season.end_date}</p></div>
+          <span style={s.badge}>{season.days_remaining}d left</span>
+        </div>
+        <div style={styles.seasonMetricGrid}>
+          <StatCard Icon={Trophy} label="Challenges" value={season.challenge_count || 0} />
+          <StatCard Icon={CalendarDays} label="Events" value={season.event_count || 0} />
+          <StatCard Icon={Flag} label="Milestones" value={season.milestone_count || 0} />
+          <StatCard Icon={Zap} label="Rewards" value={season.reward_count || 0} />
+        </div>
+        {canManage && <div style={s.actions}><button style={s.secondaryButton} onClick={() => openSeasonForm(season)}>Edit</button><button style={s.secondaryButton} onClick={() => deleteSeason(season)}>Archive</button></div>}
+      </section>)}</div> : <section style={{...s.card, ...s.empty, marginTop:16}}><CalendarDays size={40}/><h3>No seasons yet</h3><p>Create a time-bound season to group challenges, events, rewards, and milestones.</p></section>}
+
       <h2 style={s.sectionTitle}>This week</h2>
       <section style={styles.statsGrid}>
         <StatCard
@@ -715,6 +807,7 @@ export default function OrbitDetail() {
           <div><label style={s.label}>Start</label><input style={s.input} type="datetime-local" value={eventStart} onChange={event => setEventStart(event.target.value)}/></div>
           <div><label style={s.label}>End optional</label><input style={s.input} type="datetime-local" value={eventEnd} onChange={event => setEventEnd(event.target.value)}/></div>
         </div>
+        {!!seasons.length && <><label style={s.label}>Season</label><select style={s.input} value={eventSeasonId} onChange={event => setEventSeasonId(event.target.value)}><option value="">None</option>{seasons.map(season => <option key={season.id} value={season.id}>{season.title}</option>)}</select></>}
         <div style={s.actions}><button type="button" style={s.secondaryButton} onClick={() => { setShowEventForm(false); setEditingEvent(null); }}>Cancel</button><button style={s.button} disabled={busy || !eventTitle.trim() || !eventStart.trim()}>Save</button></div>
       </form>}
       {events.length ? <div style={{...s.cardStack, marginTop:16}}>{events.map(event => <React.Fragment key={event.id}>
@@ -747,6 +840,7 @@ export default function OrbitDetail() {
         <label style={s.label}>Title</label><input style={s.input} value={rewardTitle} onChange={event => setRewardTitle(event.target.value)} maxLength={100}/>
         <label style={s.label}>Description</label><input style={s.input} value={rewardDescription} onChange={event => setRewardDescription(event.target.value)} maxLength={500}/>
         <label style={s.label}>XP cost</label><input style={s.input} type="number" min="1" value={rewardCost} onChange={event => setRewardCost(event.target.value)}/>
+        {!!seasons.length && <><label style={s.label}>Season</label><select style={s.input} value={rewardSeasonId} onChange={event => setRewardSeasonId(event.target.value)}><option value="">None</option>{seasons.map(season => <option key={season.id} value={season.id}>{season.title}</option>)}</select></>}
         <div style={s.actions}><button type="button" style={s.secondaryButton} onClick={() => { setShowRewardForm(false); setEditingReward(null); }}>Cancel</button><button style={s.button} disabled={busy || !rewardTitle.trim() || Number(rewardCost) < 1}>Save</button></div>
       </form>}
       {activeRewards.length ? <div style={{...s.cardStack, marginTop:16}}>{activeRewards.map(reward => <OrbitRewardCard key={reward.id} reward={reward} canManage={canManage} busy={busy} onEdit={() => openRewardForm(reward)} onDelete={() => deleteReward(reward)} onRedeem={() => redeemReward(reward)} />)}</div> : <section style={{...s.card, ...s.empty, marginTop:16}}><h3>No Orbit rewards</h3><p>Create a shared reward worth working toward together.</p></section>}
@@ -1209,6 +1303,7 @@ const styles = {
   healthTrend: { fontWeight:850, fontSize:16 },
   healthBreakdown: { display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(100px, 1fr))", gap:12, marginTop:16 },
   healthMetric: { display:"grid", gap:4 },
+  seasonMetricGrid: { display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(120px, 1fr))", gap:12, marginTop:16 },
   heroTop: {
     display: "flex",
     alignItems: "center",
