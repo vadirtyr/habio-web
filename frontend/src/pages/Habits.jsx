@@ -129,7 +129,12 @@ export default function Habits() {
         <div style={styles.grid}>
           {habits.map((habit) => {
             const habitId = habit._list_key || habit.id || habit._id;
-            const completed = Boolean(habit.completed_today);
+            const weeklyTarget = Number(habit.weekly_target || 1);
+            const weeklyCompleted = Number(habit.weekly_completed_count || 0);
+            const weeklyRemaining = Number(habit.weekly_remaining_count ?? Math.max(0, weeklyTarget - weeklyCompleted));
+            const isWeeklyTarget = habit.frequency === "weekly" && weeklyTarget > 1;
+            const completed = isWeeklyTarget ? Boolean(habit.is_completed_for_period) : Boolean(habit.completed_today);
+            const weeklyProgressText = isWeeklyTarget ? `${weeklyCompleted} / ${weeklyTarget} this week` : null;
 
             return (
               <div key={habitId} style={styles.card}>
@@ -140,6 +145,7 @@ export default function Habits() {
                     <p style={styles.meta}>
                       {habit.category || "Habit"} · {habit.frequency || "daily"}
                     </p>
+                    {weeklyProgressText && <p style={styles.weeklyProgress}>{weeklyProgressText}{weeklyRemaining ? ` · ${weeklyRemaining} remaining` : " · target met"}</p>}
                   </div>
 
                   <div style={styles.coinBadge}>
@@ -169,10 +175,10 @@ export default function Habits() {
                     onClick={() => completeHabit(habitId)}
                   >
                     {completed
-                      ? "Done Today"
+                      ? isWeeklyTarget ? "Target Met" : "Done Today"
                       : completingId === habitId
                       ? "Saving..."
-                      : "Complete"}
+                      : isWeeklyTarget ? "Mark Instance Complete" : "Complete"}
                   </button>
 
                   {!habit.is_orbit_item && <button
@@ -301,6 +307,8 @@ const styles = {
     letterSpacing: "-0.03em",
     color: "var(--text)",
   },
+
+  weeklyProgress: { margin: "8px 0 0", color: "var(--primary-dark)", fontWeight: 900, fontSize: 13 },
 
   meta: {
     margin: "7px 0 0",

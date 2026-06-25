@@ -652,6 +652,30 @@ export default function OrbitDetail() {
           >
             Members
           </button>
+          <button
+            style={s.secondaryButton}
+            onClick={() => navigate(`/projects?orbitId=${orbitId}`)}
+          >
+            Projects
+          </button>
+          <button
+            style={s.secondaryButton}
+            onClick={() => navigate(`/orbits/${orbitId}/timeline`)}
+          >
+            Timeline
+          </button>
+          {canManage && <button
+            style={s.secondaryButton}
+            onClick={() => navigate(`/orbits/${orbitId}/theme`)}
+          >
+            Theme
+          </button>}
+          {canManage && <button
+            style={s.secondaryButton}
+            onClick={() => navigate(`/orbits/${orbitId}/verifications`)}
+          >
+            {pendingProofCount ? `Verify (${pendingProofCount})` : "Verify"}
+          </button>}
           {canManage && <button
             style={s.button}
             onClick={() => navigate(`/orbits/${orbitId}/goals/new`)}

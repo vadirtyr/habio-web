@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { formatApiError, orbitApi } from "@/lib/api";
 import { orbitStyles as s } from "@/pages/orbitStyles";
@@ -68,9 +68,11 @@ const STARTER_TEMPLATE_COUNT = TEMPLATES.filter(template => template.id !== BLAN
 
 export default function CreateOrbit() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const initialTemplate = TEMPLATES.find((template) => template.id === searchParams.get("template")) || TEMPLATES[0];
   const [step, setStep] = useState(0);
-  const [selected, setSelected] = useState(TEMPLATES[0]);
-  const [name, setName] = useState(TEMPLATES[0].nameSuggestion);
+  const [selected, setSelected] = useState(initialTemplate);
+  const [name, setName] = useState(initialTemplate.nameSuggestion);
   const [description, setDescription] = useState("");
   const [saving, setSaving] = useState(false);
   const isFamily = selected.id === "family";

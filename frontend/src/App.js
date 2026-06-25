@@ -73,6 +73,14 @@ import OrbitMembers from "@/pages/OrbitMembers";
 import OrbitInvite from "@/pages/OrbitInvite";
 import CreateOrbitGoal from "@/pages/CreateOrbitGoal";
 import OrbitGrowthAnalytics from "@/pages/OrbitGrowthAnalytics";
+import AdminDashboard from "@/pages/AdminDashboard";
+import AdminTools from "@/pages/AdminTools";
+import Projects from "@/pages/Projects";
+import ProjectDetail from "@/pages/ProjectDetail";
+import TemplateMarketplace from "@/pages/TemplateMarketplace";
+import OrbitTimeline from "@/pages/OrbitTimeline";
+import OrbitThemeSettings from "@/pages/OrbitThemeSettings";
+import OrbitVerifications from "@/pages/OrbitVerifications";
 
 const TOAST_OPTIONS = {
   style: {
@@ -266,11 +274,19 @@ function App() {
                   }
                 />
 
+                <Route path="/projects" element={<Shell><Projects /></Shell>} />
+                <Route path="/projects/:projectId" element={<Shell><ProjectDetail /></Shell>} />
+                <Route path="/templates" element={<Shell><TemplateMarketplace /></Shell>} />
+                <Route path="/orbits/:orbitId/timeline" element={<Shell><OrbitTimeline /></Shell>} />
+                <Route path="/orbits/:orbitId/theme" element={<Shell><OrbitThemeSettings /></Shell>} />
+                <Route path="/orbits/:orbitId/verifications" element={<Shell><OrbitVerifications /></Shell>} />
                 <Route path="/orbits" element={<Shell><Orbits /></Shell>} />
                 <Route path="/orbits/new" element={<Shell><CreateOrbit /></Shell>} />
                 <Route path="/orbits/:orbitId" element={<Shell><OrbitDetail /></Shell>} />
                 <Route path="/orbits/:orbitId/members" element={<Shell><OrbitMembers /></Shell>} />
                 <Route path="/orbits/:orbitId/goals/new" element={<Shell><CreateOrbitGoal /></Shell>} />
+                <Route path="/admin" element={<Shell><AdminDashboard /></Shell>} />
+                <Route path="/admin/tools" element={<Shell><AdminTools /></Shell>} />
                 <Route path="/admin/orbit-growth" element={<Shell><OrbitGrowthAnalytics /></Shell>} />
 
                 <Route

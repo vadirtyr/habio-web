@@ -99,9 +99,34 @@ export const statsApi = {
 };
 
 export const adminApi = {
+  getOverview: () => api.get("/admin/analytics/overview"),
+  getAdoptionFunnel: (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return api.get(`/admin/analytics/adoption-funnel${query ? `?${query}` : ""}`);
+  },
   getOrbitGrowth: () => api.get("/admin/analytics/orbit-growth"),
   getTemplateAdoption: () => api.get("/admin/analytics/template-adoption"),
   getRetention30d: () => api.get("/admin/analytics/retention-30d"),
+  searchUsers: (q) => api.get(`/admin/tools/users?q=${encodeURIComponent(q || "")}`),
+  getUserSummary: (userId) => api.get(`/admin/tools/users/${encodeURIComponent(userId)}`),
+  searchOrbits: (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return api.get(`/admin/tools/orbits${query ? `?${query}` : ""}`);
+  },
+  getOrbitSummary: (orbitId) => api.get(`/admin/tools/orbits/${encodeURIComponent(orbitId)}`),
+  listSupportTickets: (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return api.get(`/admin/tools/support-tickets${query ? `?${query}` : ""}`);
+  },
+  updateSupportTicket: (ticketId, data) => api.patch(`/admin/tools/support-tickets/${encodeURIComponent(ticketId)}`, data),
+  listModerationReports: (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return api.get(`/admin/tools/moderation-reports${query ? `?${query}` : ""}`);
+  },
+  updateModerationReport: (reportId, data) => api.patch(`/admin/tools/moderation-reports/${encodeURIComponent(reportId)}`, data),
+  listFeatureFlags: () => api.get("/admin/tools/feature-flags"),
+  createFeatureFlag: (data) => api.post("/admin/tools/feature-flags", data),
+  updateFeatureFlag: (key, data) => api.patch(`/admin/tools/feature-flags/${encodeURIComponent(key)}`, data),
 };
 
 export const recapApi = {
@@ -129,6 +154,12 @@ export const orbitApi = {
   getDashboard: (orbitId) => api.get(`/orbits/${orbitId}/dashboard`),
   getParentDashboard: (orbitId) => api.get(`/orbits/${orbitId}/parent-dashboard`),
   getMilestones: (orbitId) => api.get(`/orbits/${orbitId}/milestones`),
+  getMemories: (orbitId) => api.get(`/orbits/${orbitId}/memories`),
+  getMemory: (orbitId, memoryId) => api.get(`/orbits/${orbitId}/memories/${memoryId}`),
+  pinMemory: (orbitId, memoryId) => api.post(`/orbits/${orbitId}/memories/${memoryId}/pin`),
+  unpinMemory: (orbitId, memoryId) => api.post(`/orbits/${orbitId}/memories/${memoryId}/unpin`),
+  listThemes: () => api.get("/orbits/themes"),
+  updateTheme: (orbitId, themeId) => api.patch(`/orbits/${orbitId}/theme`, { theme_id: themeId }),
   syncMilestones: (orbitId) => api.post(`/orbits/${orbitId}/milestones/sync`),
   listSeasons: (orbitId) => api.get(`/orbits/${orbitId}/seasons`),
   createSeason: (orbitId, data) => api.post(`/orbits/${orbitId}/seasons`, data),
@@ -215,6 +246,18 @@ export const orbitApi = {
     api.post(`/orbits/${orbitId}/events/${eventId}/readiness/items/${itemId}/complete`),
   uncompleteEventReadinessItem: (orbitId, eventId, itemId) =>
     api.post(`/orbits/${orbitId}/events/${eventId}/readiness/items/${itemId}/uncomplete`),
+};
+
+export const projectApi = {
+  list: (orbitId) => api.get(orbitId ? `/projects?orbit_id=${encodeURIComponent(orbitId)}` : "/projects"),
+  get: (projectId) => api.get(`/projects/${projectId}`),
+  create: (data) => api.post("/projects", data),
+  update: (projectId, data) => api.patch(`/projects/${projectId}`, data),
+  remove: (projectId) => api.delete(`/projects/${projectId}`),
+  completeSubtask: (projectId, subtaskId) => api.post(`/projects/${projectId}/subtasks/${subtaskId}/complete`),
+  submitSubtaskVerification: (projectId, subtaskId, data) => api.post(`/projects/${projectId}/subtasks/${subtaskId}/verification`, data),
+  approveVerification: (projectId, proofId) => api.post(`/projects/${projectId}/verifications/${proofId}/approve`),
+  rejectVerification: (projectId, proofId, data = {}) => api.post(`/projects/${projectId}/verifications/${proofId}/reject`, data),
 };
 
 export default api;

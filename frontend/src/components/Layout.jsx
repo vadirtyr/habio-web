@@ -14,10 +14,12 @@ const NAV_ITEMS = [
   { label: "Dashboard", path: "/", icon: "🌍" },
   { label: "Habits", path: "/habits", icon: "✅" },
   { label: "Tasks", path: "/tasks", icon: "📝" },
+  { label: "Projects", path: "/projects", icon: "📋" },
   { label: "Rewards", path: "/rewards", icon: "🎁" },
   { label: "Quests", path: "/quests", icon: "🧭" },
   { label: "Achievements", path: "/achievements", icon: "🏆" },
   { label: "Shared Orbits", path: "/orbits", icon: "🫂" },
+  { label: "Templates", path: "/templates", icon: "🧩" },
   { label: "Friend Feed", path: "/feed", icon: "🛰️" },
   { label: "My Activity", path: "/activity", icon: "📡" },
   { label: "Find People", path: "/people", icon: "👥" },
@@ -145,7 +147,11 @@ export default function Layout({ children }) {
               flexWrap: isMobile ? "wrap" : "nowrap",
             }}
           >
-            {[...NAV_ITEMS, ...(user?.is_admin ? [{ label: "Orbit Growth", path: "/admin/orbit-growth", icon: "📊" }] : [])].map((item) => (
+            {[...NAV_ITEMS, ...(user?.is_admin ? [
+              { label: "Admin Dashboard", path: "/admin", icon: "📊" },
+              { label: "Admin Tools", path: "/admin/tools", icon: "🛠️" },
+              { label: "Orbit Growth", path: "/admin/orbit-growth", icon: "📈" },
+            ] : [])].map((item) => (
               <NavLink
                 key={item.path}
                 to={item.path}

@@ -6,6 +6,12 @@ import { formatApiError, orbitApi } from "@/lib/api";
 import { orbitStyles as s } from "@/pages/orbitStyles";
 
 const itemsOf = (data) => Array.isArray(data) ? data : data?.items || [];
+function themeGradient(orbit) {
+  return orbit?.theme?.gradient || orbit?.theme?.background || "linear-gradient(135deg, var(--primary), var(--primary-dark))";
+}
+function textOnTheme(orbit) {
+  return orbit?.theme?.text_color || "white";
+}
 
 export default function Orbits() {
   const navigate = useNavigate();
@@ -59,6 +65,6 @@ export default function Orbits() {
     <form style={{...s.card, marginTop: 26}} onSubmit={join}><h2 style={{...s.name, fontSize: 22}}>Have an invite code?</h2><div style={{display:"flex", gap:10, marginTop:16, flexWrap:"wrap"}}><input style={{...s.input, flex:"1 1 260px"}} value={code} onChange={e => setCode(e.target.value)} placeholder="Enter invite code"/><button style={s.button} disabled={!code.trim() || busy === "join"}>{busy === "join" ? "Joining..." : "Join Orbit"}</button></div></form>
 
     <h2 style={s.sectionTitle}>Your Orbits</h2>
-    {loading ? <p style={s.muted}>Loading Shared Orbits...</p> : orbits.length === 0 ? <div style={{...s.card, ...s.empty}}><Users size={42}/><h3 style={{color:"var(--text)"}}>Create your first Orbit</h3><p>Create an Orbit for your family, troop, fitness group, study group, or accountability circle. Start with a template and customize from there.</p></div> : <div style={s.cardStack}>{orbits.map(orbit => <button key={orbit.id} onClick={() => navigate(`/orbits/${orbit.id}`)} style={{...s.card, ...s.row, width:"100%", textAlign:"left", cursor:"pointer"}}><div><h3 style={s.name}>{orbit.name}</h3><p style={s.muted}>{orbit.member_count} member{orbit.member_count === 1 ? "" : "s"} · {orbit.viewer_role}</p></div><ChevronRight color="var(--muted)"/></button>)}</div>}
+    {loading ? <p style={s.muted}>Loading Shared Orbits...</p> : orbits.length === 0 ? <div style={{...s.card, ...s.empty}}><Users size={42}/><h3 style={{color:"var(--text)"}}>Create your first Orbit</h3><p>Create an Orbit for your family, troop, fitness group, study group, or accountability circle. Start with a template and customize from there.</p></div> : <div style={s.cardStack}>{orbits.map(orbit => <button key={orbit.id} onClick={() => navigate(`/orbits/${orbit.id}`)} style={{...s.card, ...s.row, width:"100%", textAlign:"left", cursor:"pointer", background: themeGradient(orbit), color: textOnTheme(orbit), overflow:"hidden"}}><div><h3 style={{...s.name, color:textOnTheme(orbit)}}>{orbit.name}</h3><p style={{margin:"6px 0 0", color:textOnTheme(orbit), opacity:0.9, fontWeight:750}}>Level {orbit.level || 1} · {orbit.member_count} member{orbit.member_count === 1 ? "" : "s"} · {orbit.viewer_role}{orbit.health_score != null ? ` · Health ${orbit.health_score}` : ""}</p></div><ChevronRight color={textOnTheme(orbit)}/></button>)}</div>}
   </div>;
 }
