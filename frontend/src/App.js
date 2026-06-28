@@ -48,6 +48,7 @@ import DeleteAccount from "@/pages/DeleteAccount";
 
 import Settings from "@/pages/Settings";
 import ChangePassword from "@/pages/ChangePassword";
+import BillingSettings from "@/pages/BillingSettings";
 
 import ForgotPassword from "@/pages/ForgotPassword";
 import ResetPassword from "@/pages/ResetPassword";
@@ -325,6 +326,14 @@ function App() {
                   }
                 />
 
+                <Route
+                  path="/billing"
+                  element={
+                    <Shell>
+                      <BillingSettings />
+                    </Shell>
+                  }
+                />
                 <Route
                   path="/change-password"
                   element={

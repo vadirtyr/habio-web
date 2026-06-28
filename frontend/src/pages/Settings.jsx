@@ -2,6 +2,7 @@ import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   ChevronRight,
+  CreditCard,
   KeyRound,
   LifeBuoy,
   LogOut,
@@ -69,6 +70,12 @@ export default function Settings() {
           title="Theme Store"
           description="Choose owned themes and unlock new visual styles."
           to="/themes"
+        />
+        <SettingsCard
+          icon={<CreditCard size={22} />}
+          title="Plan & Billing"
+          description="View plans, entitlements, and subscription status."
+          to="/billing"
         />
 
         <SettingsCard

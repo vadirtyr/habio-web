@@ -54,6 +54,13 @@ export function formatApiError(detail) {
   return String(detail);
 }
 
+export const billingApi = {
+  getPlans: () => api.get("/billing/plans"),
+  getMe: () => api.get("/billing/me"),
+  getEntitlements: () => api.get("/billing/entitlements"),
+  mockUpgrade: (data) => api.post("/billing/mock-upgrade", data),
+  mockCancel: (data = {}) => api.post("/billing/mock-cancel", data),
+};
 export const activityApi = {
   getMyActivity: () => api.get("/activity"),
   getFeed: () => api.get("/feed"),
